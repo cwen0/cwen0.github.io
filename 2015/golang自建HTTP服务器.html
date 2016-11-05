@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>golang自建HTTP服务器</title>
+
+    
+    <link href="/static/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+    
+    <link href="/static/css/clean-blog.css" rel="stylesheet">
+
+    
+    <link href="/static/vendor/font-awesome/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+
+
+</head>
+
+
+<body>
+ 
+ <nav class="navbar navbar-default navbar-custom navbar-fixed-top">
+     <div class="container-fluid">
+         
+         <div class="navbar-header page-scroll">
+             <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                 <span class="sr-only">Toggle navigation</span>
+                 Menu <i class="fa fa-bars"></i>
+             </button>
+             <a class="navbar-brand" href="http://www.cwen.pw/index.html">cwen&#39;s blog</a>
+         </div>
+
+         
+         <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+             <ul class="nav navbar-nav navbar-right">
+                 <li>
+                     <a href="http://www.cwen.pw/index.html">Home</a>
+                 </li>
+                 <li>
+                     <a href="http://www.cwen.pw/archive.html">Archive</a>
+                 </li>
+                 <li>
+                     <a href="http://www.cwen.pw/about.html">About</a>
+                 </li>
+                 <li>
+                     <a href="http://www.cwen.pw/atom.xml">RSS</a>
+                 </li>
+             </ul>
+         </div>
+         
+     </div>
+     
+ </nav>
+
+
+    
+    
+    <header class="intro-header" style="background-image: url('/static/img/post-bg.jpg')">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                    <div class="post-heading">
+                        <h1>golang自建HTTP服务器</h1>
+                        <span class="meta">Posted by <a href="#">cwen</a> 2015-11-20</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    
+    <article>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                 
+                    <a href="http://www.cwen.pw/tags/%e7%bc%96%e7%a8%8b.html"><span class='glyphicon glyphicon-tags tags' aria-hidden="true" ></span>&nbsp;<span>编程</span></a>
+                
+                    <a href="http://www.cwen.pw/tags/golang.html"><span class='glyphicon glyphicon-tags tags' aria-hidden="true" ></span>&nbsp;<span>golang</span></a>
+                
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                    <p>golang作为二十一世纪的编程语言，让我们一起看看golang是如何实现自己的http服务器</p>
+
+<h4>go封装http服务器简单实例</h4>
+
+<p>让我们直接来看代码</p>
+
+<pre><code>package main
+import (
+    &quot;io&quot;
+    &quot;net/http&quot;
+    &quot;log&quot;
+)
+// hello world, the web server
+func HelloServer(w http.ResponseWriter, req *http.Request) {
+    io.WriteString(w, &quot;hello, world!\n&quot;)
+}
+func main() {
+    http.HandleFunc(&quot;/hello&quot;, HelloServer)
+    err := http.ListenAndServe(&quot;:12345&quot;, nil)
+    if err != nil {
+        log.Fatal(&quot;ListenAndServe: &quot;, err)
+    }
+}
+</code></pre>
+
+<p>没错就是这么简单运,一个http服务器就搭建成功，只要调用http包的两个函数就可以了。<br />
+这里首先调用的是<code>http.HandleFunc</code>函数，函数签名如下</p>
+
+<pre><code>//HandleFunc注册一个处理器函数handler和对应的模式pattern（注册到DefaultServeMux）。
+//ServeMux的文档解释了模式的匹配机制。
+func HandleFunc(pattern string, handler func(ResponseWriter, *Request))
+</code></pre>
+
+<p>接着就是设置监听端口，使用的是<code>http.ListenAndServer</code>。函数签名如下</p>
+
+<pre><code>//ListenAndServe监听TCP地址addr，并且会使用handler参数调用Serve函数处理接收到的连接。
+//handler参数一般会设为nil，此时会使用DefaultServeMux。
+func ListenAndServe(addr string, handler Handler) error
+</code></pre>
+
+<p>看到这里我相信大家脑子里会有很多疑惑&hellip;那么我们就接着往下探讨<br />
+我们先从<code>ListenAndServe</code>这个函数看起，看看它到底为我们做了什么</p>
+
+<h4>ListenAndServer深入探究</h4>
+
+<p>我们先从源码看起</p>
+
+<pre><code>func ListenAndServe(addr string, handler Handler) error {
+     server := &amp;Server{Addr: addr, Handler: handler}
+     return server.ListenAndServe()
+}
+</code></pre>
+
+<p>从函数的参数来看，这个函数传入俩个参数，<code>addr</code>和<code>handler</code>，很明显<code>addr</code>是我们想要监听的端口地址,第二的参数是一个<a href="https://godoc.org/net/http#Handler" title="Handler">Handler</a>,通过查看文档得知，它是一个只包含了<code>ServeHTTP(ResponseWriter, *Request)</code>的接口，也就说只要某个<code>struct</code>有`<code>ServeHTTP(ResponseWriter, *Request)</code>这个方法，那这个<code>struct</code>就自动实现了<code>Handler</code>接口。<br />
+显示什么网页取决于第二个参数<code>Hander</code>，<code>Hander</code>又只有1个<code>ServeHTTP</code>
+所以可以证明，显示什么网页取决于ServeHTTP
+那就<code>ServeHTTP</code>方法，他需要2个参数，一个是<code>http.ResponseWriter</code>，另一个是<code>http.Request</code>
+往<code>http.ResponseWriter</code>写入什么内容，浏览器的网页源码就是什么内容
+http.Request里面是封装了，浏览器发过来的请求（包含路径、浏览器类型等等）</p>
+
+<p>接下来让我来实现一个自己<code>Handler</code></p>
+
+<pre><code>package main
+
+import (
+    &quot;io&quot;
+    &quot;log&quot;
+    &quot;net/http&quot;
+)
+
+type myHandler struct{}
+
+func (*myHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+    io.WriteString(w, &quot;myHandler Hello Word&quot;)
+}
+
+func main() {
+
+    err := http.ListenAndServe(&quot;:12345&quot;, &amp;myHandler{})
+    if err != nil {
+        log.Fatal(&quot;ListenAndServe: &quot;, err)
+    }
+}
+</code></pre>
+
+<p>当<code>http.ListenAndServe(&quot;:12345&quot;, &amp;myHandler{})</code>后，开始等待有访问请求
+一旦有访问请求过来，http包帮我们处理了一系列动作后，最后他会去调用<code>myHandler</code>的<code>ServeHTTP</code>这个方法，并把自己已经处理好的<code>http.ResponseWriter</code>, <code>*http.Request</code>传进去
+而<code>myHandler</code>的<code>ServeHTTP</code>这个方法，拿到<code>*http.ResponseWriter</code>后，并往里面写东西，客户端的网页就显示出来了</p>
+
+<p>我接着还是回到<code>ListenAndServe</code>这个函数上，看看这个函数到底为我们干了些什么呢？<br />
+这个底层其实这样处理的：初始化一个<code>server</code>对象，然后调用了<code>server.ListenAndServe()</code><br />
+我们跳到<code>server.ListenAndServe()</code> 处</p>
+
+<pre><code>// ListenAndServe listens on the TCP network address srv.Addr and then
+// calls Serve to handle requests on incoming connections.  If
+// srv.Addr is blank, &quot;:http&quot; is used.
+ func (srv *Server) ListenAndServe() error {
+    addr := srv.Addr
+    if addr == &quot;&quot; {
+        addr = &quot;:http&quot;
+    }
+    ln, err := net.Listen(&quot;tcp&quot;, addr)
+    if err != nil {
+        return err
+    }
+    return srv.Serve(tcpKeepAliveListener{ln.(*net.TCPListener)})
+}
+</code></pre>
+
+<p>可以看到其实<code>server.ListenAndServe()</code>只是调用了<code>net.Listen(&quot;tcp&quot;, addr)</code>，也就是底层用TCP协议搭建了一个服务，然后监控我们设置的端口。</p>
+
+<p>我们在看看<code>Serve</code>函数，</p>
+
+<pre><code>// Serve accepts incoming connections on the Listener l, creating a
+// new service goroutine for each.  The service goroutines read requests and
+// then call srv.Handler to reply to them.
+func (srv *Server) Serve(l net.Listener) error {
+    defer l.Close()
+    var tempDelay time.Duration // how long to sleep on accept failure
+    for {
+        rw, e := l.Accept()
+        if e != nil {
+            if ne, ok := e.(net.Error); ok &amp;&amp; ne.Temporary() {
+                if tempDelay == 0 {
+                    tempDelay = 5 * time.Millisecond
+                } else {
+                    tempDelay *= 2
+                }
+                if max := 1 * time.Second; tempDelay &gt; max {
+                    tempDelay = max
+                }
+                srv.logf(&quot;http: Accept error: %v; retrying in %v&quot;, e, tempDelay)
+                time.Sleep(tempDelay)
+                continue
+            }
+            return e
+        }
+        tempDelay = 0
+        c, err := srv.newConn(rw)
+        if err != nil {
+            continue
+        }
+        c.setState(c.rwc, StateNew) // before Serve can return
+        go c.serve()
+    }
+}
+
+</code></pre>
+
+<p>监控之后如何接收客户端的请求呢？上面代码执行监控端口之后，调用了<code>srv.Serve(net.Listener)</code>函数，这个函数就是处理接收客户端的请求信息。这个函数里面起了一个<code>for{}</code>，首先通过<code>Listener</code>接收请求，其次创建一个<code>Conn</code>，最后单独开了一个<code>goroutine</code>，把这个请求的数据当做参数扔给这个<code>conn</code>去服务：<code>go c.serve()</code>。这个就是高并发体现了，用户的每一次请求都是在一个新的<code>goroutine</code>去服务，相互不影响。</p>
+
+<p>那么如何具体分配到相应的函数来处理请求呢？<code>conn</code>首先会解析<code>request:c.readRequest()</code>,然后获取相应的<code>handler:handler := c.server.Handler</code>，也就是我们刚才在调用函数<code>ListenAndServe</code>时候的第二个参数，我们前面例子传递的是<code>nil</code>，也就是为空，那么默认获取<code>handler = DefaultServeMux</code>,那么这个变量用来做什么的呢？对，这个变量就是一个路由器，它用来匹配url跳转到其相应的<code>handle</code>函数，那么这个我们有设置过吗?有，我们调用的代码里面第一句不是调用了<code>http.HandleFunc(&quot;/&quot;, HelloServer)</code>嘛。这个作用就是注册了请求/的路由规则，当请求<code>uri</code>为<code>&quot;/&quot;</code>，路由就会转到函数<code>HelloServer</code>，<code>DefaultServeMux</code>会调用<code>ServeHTTP</code>方法，这个方法内部其实就是调用<code>HelloServer</code>本身，最后通过写入<code>response</code>的信息反馈到客户端。<br />
+<img src="http://7xnp02.com1.z0.glb.clouddn.com/3.3.illustrator.png" alt="" /><br />
+<strong>http连接处理流程(图片摘自<a href="https://github.com/astaxie/build-web-application-with-golang">go web编程</a>)</strong></p>
+
+<h4>路由处理</h4>
+
+<p>实际上我们在前边也多多少少谈到了路由，前面有说到实现<code>Handler</code>接口的<code>struct</code>,没错我们可以在这个<code>struct</code>的<code>ServeHTTP</code>函数中进行路由判断<br />
+来看下面这个例子</p>
+
+<pre><code>package main
+
+import (
+    &quot;io&quot;
+    &quot;log&quot;
+    &quot;net/http&quot;
+)
+
+type myHandler struct{}
+
+func (*myHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+    path := r.URL.String()
+    switch path {
+    case &quot;/&quot;:
+        io.WriteString(w, &quot;&lt;h1&gt;root&lt;/h1&gt;&lt;a href=\&quot;abc\&quot;&gt;abc&lt;/a&gt;&quot;)
+    case &quot;/abc&quot;:
+        io.WriteString(w, &quot;&lt;h1&gt;abc&lt;/h1&gt;&lt;a href=\&quot;/\&quot;&gt;root&lt;/a&gt;&quot;)
+    }
+}
+
+func main() {
+
+    err := http.ListenAndServe(&quot;:12345&quot;, &amp;myHandler{})
+    if err != nil {
+        log.Fatal(&quot;ListenAndServe: &quot;, err)
+    }
+}
+</code></pre>
+
+<p>没错每一个<code>case</code>就是一个页面，那么问题来了如果一个网站有上百个页面，肿么办？上百个<code>case</code>？答案是否定的(其实上百个<code>case</code>是可以实现)。那我们该肿么做呢？</p>
+
+<p>那接下来看看<code>ServeMux</code>吧&hellip;.
+其实<code>ServeMax</code>存在一张<code>map</code>表，<code>map</code>里的<code>key</code>记录的是<code>r.URL.String()</code>，而<code>value</code>记录的是一个方法，这个方法和<code>ServeHTTP</code>是一样的，这个方法有一个别名，叫<code>HandlerFunc</code>
+<code>ServeMux</code>还有一个方法名字是<code>Handle</code>，他是用来注册<code>HandlerFunc</code> 的
+<code>ServeMux</code>还有另一个方法名字是<code>ServeHTTP</code>，这样<code>ServeMux</code>是实现<code>Handler</code>接口的，否者无法当<code>http.ListenAndServe</code>的第二个参数传输<br />
+我们直接上源码</p>
+
+<pre><code>type ServeMux struct {
+    mu sync.RWMutex   //锁，由于请求涉及到并发处理，因此这里需要一个锁机制
+    m  map[string]muxEntry  //路由规则，一个string对应一个mux实体，这里的string就是注册的路由表达式
+    hosts bool // 是否在任意的规则中带有host信息
+}
+</code></pre>
+
+<p>再看 <code>muxEntry</code></p>
+
+<pre><code class="language-go">type muxEntry struct {
+    explicit bool   // 是否精确匹配
+    h        Handler // 这个路由表达式对应哪个handler
+    pattern  string  //匹配字符串
+}
+</code></pre>
+
+<p>你是不是有一个疑问？那就是我们什么时候用ServeMax？接下来我就为你解答这和问题<br />
+其实当我们在调用<code>http.ListenAndServe(&quot;:12345&quot;, nil)</code>的时候，第2个参数是nil时
+<code>http</code>内部会自己建立一个叫<code>DefaultServeMux</code>的<code>ServeMux</code>，因为这个<code>ServeMux</code>是<code>http</code>自己维护的，如果要向这个<code>ServeMux</code>注册的话，就要用http.HandleFunc这个方法</p>
+
+<p>现在我们在看最一开始的<code>http.HandleFunc(&quot;/hello&quot;, HelloServer)</code> 就会问<code>HelloServer</code> 不是没有实现<code>Handler</code>接口吗？(其实这个地方我也纠结了好久，后来找了源码以及看了好几篇大牛的博客才明白过来)
+其实在http中存在这样一个类型</p>
+
+<pre><code>type HandlerFunc func(ResponseWriter, *Request)
+
+// ServeHTTP calls f(w, r).
+func (f HandlerFunc) ServeHTTP(w ResponseWriter, r *Request) {
+    f(w, r)
+}
+</code></pre>
+
+<p>没错它经过一次类型转换，即我们调用了<code>HandlerFunc(f)</code>,强制类型转换f成为<code>HandlerFunc</code>类型，这样f就拥有了<code>ServeHTTP</code>方法。</p>
+
+<p>我们现在不使用<code>DefaultServeMux</code>，来自己实现一个<code>ServeMax</code>，直接上代码</p>
+
+<pre><code>package main
+
+import (
+    &quot;io&quot;
+    &quot;log&quot;
+    &quot;net/http&quot;
+)
+
+type myHandler struct{}
+
+func (*myHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+    io.WriteString(w, &quot;My server: &quot;+r.URL.String())
+}
+
+func sayBye(w http.ResponseWriter, r *http.Request) {
+    io.WriteString(w, &quot;Bye bye, this is version 2.&quot;)
+}
+
+func main() {
+    mux := http.NewServeMux()
+
+    mux.Handle(&quot;/&quot;, &amp;myHandler{})
+
+    // 使用函数作为 handler
+    mux.HandleFunc(&quot;/bye&quot;, sayBye)
+
+    err = http.ListenAndServe(&quot;:12345&quot;, mux)
+    if err != nil {
+         log.Fatal(&quot;ListenAndServe: &quot;, err)
+    }
+}
+</code></pre>
+
+<p>到这里我们的golang版的http服务器就探究结束了，如果读者有兴趣还可以更深入的探究，尝试实现自己的<code>Server</code><br />
+&gt; 博文参考了 asta谢的<a href="https://github.com/astaxie/build-web-application-with-golang">《go web编程》</a>  以及 waynehu 的 <a href="http://my.oschina.net/u/943306/blog/151293">go语言的http包</a> 的这篇博客，在此感谢这两位作者<br />
+&gt; 如有发现什不正确或是有疑问的地方，欢迎留言或是发邮件联系博主<br />
+&gt; 如有转载请注明出处</p>
+
+                </div>
+            </div>
+
+             <div class="row">
+                <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                   <div id="disqus_thread"></div>
+<script>
+(function() { 
+    var d = document, s = d.createElement('script');
+    s.src = '//www-cwen-pw.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+                </div>
+            </div>
+        </div>
+    </article>
+    
+    <hr>
+ 
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <ul class="list-inline text-center">
+                    
+                    
+                    
+                    <li>
+                        <a href="https://github.com/cwen-coder">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+                </ul>
+                <p class="copyright text-muted">Powered by <a href="https://github.com/cwen-coder/ljgo">ljgo</a> &nbsp;  </a> &copy; 2016 &nbsp;<a href="http://www.cwen.pw">cwen&#39;s blog</p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<script src="/static/vendor/jquery/jquery.min.js"></script>
+
+
+<script src="/static/vendor/bootstrap/js/bootstrap.min.js"></script>
+
+
+<script src="/static/js/jqBootstrapValidation.js"></script>
+<script src="/static/js/contact_me.js"></script>
+
+
+<script src="/static/js/clean-blog.js"></script>
+
+
+</body>
+
+</html>

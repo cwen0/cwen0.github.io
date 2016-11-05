@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>初识 Docker</title>
+
+    
+    <link href="/static/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+    
+    <link href="/static/css/clean-blog.css" rel="stylesheet">
+
+    
+    <link href="/static/vendor/font-awesome/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+
+
+</head>
+
+
+<body>
+ 
+ <nav class="navbar navbar-default navbar-custom navbar-fixed-top">
+     <div class="container-fluid">
+         
+         <div class="navbar-header page-scroll">
+             <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                 <span class="sr-only">Toggle navigation</span>
+                 Menu <i class="fa fa-bars"></i>
+             </button>
+             <a class="navbar-brand" href="http://www.cwen.pw/index.html">cwen&#39;s blog</a>
+         </div>
+
+         
+         <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+             <ul class="nav navbar-nav navbar-right">
+                 <li>
+                     <a href="http://www.cwen.pw/index.html">Home</a>
+                 </li>
+                 <li>
+                     <a href="http://www.cwen.pw/archive.html">Archive</a>
+                 </li>
+                 <li>
+                     <a href="http://www.cwen.pw/about.html">About</a>
+                 </li>
+                 <li>
+                     <a href="http://www.cwen.pw/atom.xml">RSS</a>
+                 </li>
+             </ul>
+         </div>
+         
+     </div>
+     
+ </nav>
+
+
+    
+    
+    <header class="intro-header" style="background-image: url('/static/img/post-bg.jpg')">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                    <div class="post-heading">
+                        <h1>初识 Docker</h1>
+                        <span class="meta">Posted by <a href="#">cwen</a> 2016-06-23</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    
+    <article>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                 
+                    <a href="http://www.cwen.pw/tags/Docker.html"><span class='glyphicon glyphicon-tags tags' aria-hidden="true" ></span>&nbsp;<span>Docker</span></a>
+                
+                    <a href="http://www.cwen.pw/tags/golang.html"><span class='glyphicon glyphicon-tags tags' aria-hidden="true" ></span>&nbsp;<span>golang</span></a>
+                
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                    <p>Docker 是一个开源的应用容器引擎，使用 golang 开发实现，让开发者可以打包他们的应用以及依赖包到一个可移植的容器中，然后发布到任何流行的 Linux 机器上，也可以实现虚拟化。容器是完全使用沙箱机制，相互之间不会有任何接口。<br />
+Docker 项目的目标是实现轻量级的操作系统虚拟化解决方案。 Docker 的基础是 Linux 容器（LXC）等技术。<br />
+在 LXC 的基础上 Docker 进行了进一步的封装，让用户不需要去关心容器的管理，使得操作更为简便。用户操作 Docker 的容器就像操作一个快速轻量级的虚拟机一样简单</p>
+
+<h4>Docker 组成</h4>
+
+<ul>
+<li>Image - 镜像</li>
+<li>Containter - 容器</li>
+<li>Docker hub - 仓库<br /></li>
+</ul>
+
+<h4>安装 Docker</h4>
+
+<p>安装 Docker 要求 linux 内核版本不低于 3.13，Docker 依赖 linux 内核，使用 linux 的 namespae 实现进程的隔离，cgroup 来对资源的控制。(docker 与 linux 内核的关系以后单独研究，其实目前我不是太清楚，不敢瞎说) 如果你的内核版本低于 3.13，请自行 google 升级内核。</p>
+
+<p>查看自己内核版本信息</p>
+
+<pre><code>$ uname -a
+Linux Host 3.16.0-43-generic #58~14.04.1-Ubuntu SMP Mon Jun 22 10:21:20 UTC 2015 x86_64 x86_64 x86_64 GNU/Linux
+</code></pre>
+
+<p>或者</p>
+
+<pre><code>$ cat /proc/version
+Linux version 3.16.0-43-generic (buildd@brownie) (gcc version 4.8.2 (Ubuntu 4.8.2-19ubuntu1) ) #58~14.04.1-Ubuntu SMP Mon Jun 22 10:21:20 UTC 2015
+</code></pre>
+
+<h4>Ubuntu 安装</h4>
+
+<h6>更新APT镜像源</h6>
+
+<p>安装 apt-transport-https 包支持 https 协议的源</p>
+
+<pre><code> $ sudo apt-get update 
+ $ sudo apt-get install apt-transport-https ca-certificates
+</code></pre>
+
+<p>添加新的 gpg 密钥</p>
+
+<pre><code>$ sudo apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys 58118E89F3A912897C070ADBF76221572C52609D   
+</code></pre>
+
+<p>添加 Docker 的官方 apt 软件源</p>
+
+<pre><code>$ sudo cat &lt;&lt;EOF &gt; /etc/apt/sources.list.d/docker.list
+deb https://apt.dockerproject.org/repo ubuntu-trusty main
+EOF  
+</code></pre>
+
+<blockquote>
+<p>非 trusty 版本的系统注意修改为自己对应的代号<br />
+deb <a href="https://apt.dockerproject.org/repo">https://apt.dockerproject.org/repo</a> ubuntu-precise main<br />
+deb <a href="https://apt.dockerproject.org/repo">https://apt.dockerproject.org/repo</a> ubuntu-trusty main<br />
+deb <a href="https://apt.dockerproject.org/repo">https://apt.dockerproject.org/repo</a> ubuntu-wily main<br />
+deb <a href="https://apt.dockerproject.org/repo">https://apt.dockerproject.org/repo</a> ubuntu-xenial main</p>
+</blockquote>
+
+<p>更新 apt 软件包缓存</p>
+
+<pre><code>$ sudo apt-get update   
+</code></pre>
+
+<p>如果系统中存在老版本的 Docker，请先删除</p>
+
+<pre><code>$ sudo apt-get purge lxc-docker    
+</code></pre>
+
+<p>检查 apt 源是否发生改变</p>
+
+<pre><code>$ apt-cache policy docker-engine   
+</code></pre>
+
+<h6>更新系统内核和安装可能需要的软件包</h6>
+
+<pre><code>$ sudo apt-get install linux-image-extra-$(uname -r)
+</code></pre>
+
+<blockquote>
+<p><code>linux-image-extra</code> 允许你使用 <code>aufs</code> 文件系统</p>
+</blockquote>
+
+<h6>安装 Docker</h6>
+
+<p>更新 apt 源</p>
+
+<pre><code>$ sudo apt-get update 
+</code></pre>
+
+<p>安装 Docker</p>
+
+<pre><code>$ sudo apt-get install docker-engine     
+</code></pre>
+
+<p>启动 Docker 守护进程</p>
+
+<pre><code>$ sudo service docker start  
+</code></pre>
+
+<p>检查 Docker 是否安装成功</p>
+
+<pre><code>$ sudo docker run hello-world  
+</code></pre>
+
+<h6>使用脚本安装 Docker</h6>
+
+<p>使用官方提供的安装脚本, 使用脚本我们可以直接运行，之前的步骤都可以省略</p>
+
+<pre><code>$ sudo-i
+$ wget -qO- https://get.docker.com/ | sh  
+</code></pre>
+
+<h6>把当前用户加入 Docker 用户组</h6>
+
+<p>运行 Docker 需 root 权限， 为了我们不必一直使用 root 权限，我们可以把用户加进 Docker 用户组</p>
+
+<pre><code>$ sudo usermod -a -G docker [username]
+</code></pre>
+
+<blockquote>
+<p>Ubuntu is all set up!</p>
+</blockquote>
+
+                </div>
+            </div>
+
+             <div class="row">
+                <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                   <div id="disqus_thread"></div>
+<script>
+(function() { 
+    var d = document, s = d.createElement('script');
+    s.src = '//www-cwen-pw.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+                </div>
+            </div>
+        </div>
+    </article>
+    
+    <hr>
+ 
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <ul class="list-inline text-center">
+                    
+                    
+                    
+                    <li>
+                        <a href="https://github.com/cwen-coder">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+                </ul>
+                <p class="copyright text-muted">Powered by <a href="https://github.com/cwen-coder/ljgo">ljgo</a> &nbsp;  </a> &copy; 2016 &nbsp;<a href="http://www.cwen.pw">cwen&#39;s blog</p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<script src="/static/vendor/jquery/jquery.min.js"></script>
+
+
+<script src="/static/vendor/bootstrap/js/bootstrap.min.js"></script>
+
+
+<script src="/static/js/jqBootstrapValidation.js"></script>
+<script src="/static/js/contact_me.js"></script>
+
+
+<script src="/static/js/clean-blog.js"></script>
+
+
+</body>
+
+</html>

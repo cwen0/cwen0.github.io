@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>ljgo - 静态博客引擎(0.1.0-beta版)</title>
+
+    
+    <link href="/static/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+    
+    <link href="/static/css/clean-blog.css" rel="stylesheet">
+
+    
+    <link href="/static/vendor/font-awesome/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+
+
+</head>
+
+
+<body>
+ 
+ <nav class="navbar navbar-default navbar-custom navbar-fixed-top">
+     <div class="container-fluid">
+         
+         <div class="navbar-header page-scroll">
+             <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                 <span class="sr-only">Toggle navigation</span>
+                 Menu <i class="fa fa-bars"></i>
+             </button>
+             <a class="navbar-brand" href="http://www.cwen.pw/index.html">cwen&#39;s blog</a>
+         </div>
+
+         
+         <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+             <ul class="nav navbar-nav navbar-right">
+                 <li>
+                     <a href="http://www.cwen.pw/index.html">Home</a>
+                 </li>
+                 <li>
+                     <a href="http://www.cwen.pw/archive.html">Archive</a>
+                 </li>
+                 <li>
+                     <a href="http://www.cwen.pw/about.html">About</a>
+                 </li>
+                 <li>
+                     <a href="http://www.cwen.pw/atom.xml">RSS</a>
+                 </li>
+             </ul>
+         </div>
+         
+     </div>
+     
+ </nav>
+
+
+    
+    
+    <header class="intro-header" style="background-image: url('/static/img/post-bg.jpg')">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                    <div class="post-heading">
+                        <h1>ljgo - 静态博客引擎(0.1.0-beta版)</h1>
+                        <span class="meta">Posted by <a href="#">cwen</a> 2016-09-08</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    
+    <article>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                 
+                    <a href="http://www.cwen.pw/tags/%e4%ba%a7%e5%93%81.html"><span class='glyphicon glyphicon-tags tags' aria-hidden="true" ></span>&nbsp;<span>产品</span></a>
+                
+                    <a href="http://www.cwen.pw/tags/golang.html"><span class='glyphicon glyphicon-tags tags' aria-hidden="true" ></span>&nbsp;<span>golang</span></a>
+                
+                    <a href="http://www.cwen.pw/tags/%e9%9d%99%e6%80%81%e5%8d%9a%e5%ae%a2.html"><span class='glyphicon glyphicon-tags tags' aria-hidden="true" ></span>&nbsp;<span>静态博客</span></a>
+                
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                    <p>ljgo 是使用GO 语言实现的简单静态博客引擎, 编译速度快、安装简单。</p>
+
+<h4>目前版本 0.1.0-beta</h4>
+
+<h2>安装</h2>
+
+<h4>源码安装</h4>
+
+<p>go运行环境安装请自行google</p>
+
+<pre><code>go get -u github.com/cwen-coder/ljgo
+make install
+</code></pre>
+
+<h4>直接下载编译好的可执行文件</h4>
+
+<p>下载地址 ： <a href="https://github.com/cwen-coder/ljgo/releases">ljgo</a></p>
+
+<h2>快速入门</h2>
+
+<h4>新建站点</h4>
+
+<pre><code>ljgo new example.com
+#执行完毕后，会在生成example.com文件夹
+</code></pre>
+
+<p><code>example.com</code> 文件夹目录结构</p>
+
+<pre><code>- config.yml    // 站点配置文件
+- source // 保存文章目录
+- - | - - about.md // 关于页面内容
+- - | - - article.md // 演示文章内容
+- themes  // 保存所有主题
+- - | - - default // 站点默认主题
+
+</code></pre>
+
+<p><code>config.yml</code> 配置格式</p>
+
+<pre><code>site:
+    title: 网站标题
+    introduce: 网站描述
+    limit: 每页可显示的文章数目
+    theme: 网站主题目录   ＃eg: themes/default
+    url: 站点域名
+    comment: 评论插件变量(默认为Disqus账户名)
+    github: github.com 地址 # 可选
+    facebook: facebook 地址  # 可选
+    twitter: twitter 地址  # 可选
+serve:
+    addr: ljgo serve 监听地址 # eg: &quot;localhost:3000&quot;
+
+publish:
+    cmd: |
+        ljgo publish 命令将会执行的脚本
+</code></pre>
+
+<p>创建文章</p>
+
+<p>在source目录中建立任意.md文件（可置于子文件夹），使用如下格式：</p>
+
+<pre><code>title: 文章标题
+author: 文章作者
+date: 2016-08-02
+update: 2016-08-02
+tags:
+    - 设计
+    - 写作
+
+---
+
+文章预览内容
+    &lt;!--more--&gt;
+文章其它内容
+(文章的全部内容＝预览＋其他)
+
+</code></pre>
+
+<h4>生成静态页面</h4>
+
+<pre><code>ljgo build
+# 执行完毕在站点文件下生成public文件夹，包含所有静态文件
+</code></pre>
+
+<dl>
+<dt>在站点文件夹中直接执行 <code>ljgo build</code> ， 或是在站点文件夹外执行但是得指定站点路径 eg</dt>
+<dd><code>ljgo build example.com</code>
+<code>ljgo serve</code> <code>ljgo publis</code> 都是同样的使用姿势</dd>
+</dl>
+
+<h4>本地预览</h4>
+
+<pre><code>ligo serve
+# 打来浏览器, 访问你在站点配置中填入的端口地址
+# 默认是 http://localhost:3000
+</code></pre>
+
+<p>当然你也可以直接将 <code>ljgo serve</code> 运行在 <code>vps</code> 上</p>
+
+<h4>部署</h4>
+
+<p>你可以使用 <a href="https://pages.github.com/">github pages</a> 等服务，或者放到你的自己的vps下，因为是纯静态文件,不需要php/mysql/java等环境的支持</p>
+
+<pre><code>ljgo publish
+# 执行站点配置中填写的发布脚本
+</code></pre>
+
+<p>eg : 使用 <code>github</code>服务， 初始化好 <code>public</code>  文件夹后，我们只需要在 <code>config.yml</code> 文件中的填写如下内容：</p>
+
+<pre><code>publish:
+    cmd: |
+        git add -A
+        git commit -m &quot;update&quot;
+        git push origin
+</code></pre>
+
+<p>这样我们在每次编辑完博客后直接运行 <code>ljgo publish</code> 就一切ok</p>
+
+<h2>关于主题</h2>
+
+<p>由于自己比较懒，目前的默认主题是从 <a href="https://startbootstrap.com">start bootstrapt</a> 中的 <a href="https://startbootstrap.com/template-overviews/clean-blog/">clean-blog</a> 修改而来
+当导入其他主题，需要把主题文件夹复制到 <code>example.com/themes/</code> 文件夹下，并修改站点配置 <code>config.yml</code> 中主题路径</p>
+
+<h4>十分欢迎大家贡献第三方主题 👏</h4>
+
+<h2>正在使用</h2>
+
+<ul>
+<li><a href="http://www.cwen.pw">cwen&rsquo;s blog</a>           - me</li>
+</ul>
+
+<p>期待更多的用户</p>
+
+<h2>反馈贡献</h2>
+
+<p>非常欢迎任何人的任何贡献。如有问题可报告至 <a href="https://github.com/cwen-coder/ljgo/issues">https://github.com/cwen-coder/ljgo/issues</a>。
+或是直接发邮件To me <a href="mailto:yincwengo@gmail.com">yincwengo@gmail.com</a></p>
+
+                </div>
+            </div>
+
+             <div class="row">
+                <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                   <div id="disqus_thread"></div>
+<script>
+(function() { 
+    var d = document, s = d.createElement('script');
+    s.src = '//www-cwen-pw.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+                </div>
+            </div>
+        </div>
+    </article>
+    
+    <hr>
+ 
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <ul class="list-inline text-center">
+                    
+                    
+                    
+                    <li>
+                        <a href="https://github.com/cwen-coder">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+                </ul>
+                <p class="copyright text-muted">Powered by <a href="https://github.com/cwen-coder/ljgo">ljgo</a> &nbsp;  </a> &copy; 2016 &nbsp;<a href="http://www.cwen.pw">cwen&#39;s blog</p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<script src="/static/vendor/jquery/jquery.min.js"></script>
+
+
+<script src="/static/vendor/bootstrap/js/bootstrap.min.js"></script>
+
+
+<script src="/static/js/jqBootstrapValidation.js"></script>
+<script src="/static/js/contact_me.js"></script>
+
+
+<script src="/static/js/clean-blog.js"></script>
+
+
+</body>
+
+</html>
