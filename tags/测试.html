@@ -9,7 +9,7 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title>golang 编程基础 - Hello,Word</title>
+    <title></title>
 
     
     <link href="/static/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
@@ -67,8 +67,8 @@
             <div class="row">
                 <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
                     <div class="post-heading">
-                        <h1>golang 编程基础 - Hello,Word</h1>
-                        <span class="meta">Posted by <a href="#">cwen</a> 2015-12-02</span>
+                        <h1>Tag: 测试</h1>
+                        <span>All articles with tag of 测试</span>
                     </div>
                 </div>
             </div>
@@ -79,91 +79,18 @@
     <article>
         <div class="container">
             <div class="row">
-                <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-                 
-                    <a href="http://int64.me/tags/%e7%bc%96%e7%a8%8b.html"><span class='glyphicon glyphicon-tags tags' aria-hidden="true" ></span>&nbsp;<span>编程</span></a>
-                
-                    <a href="http://int64.me/tags/golang.html"><span class='glyphicon glyphicon-tags tags' aria-hidden="true" ></span>&nbsp;<span>golang</span></a>
-                
-                </div>
             </div>
             <div class="row">
                 <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-                    <p>最近越发觉得自己的golang基础还是不够扎实,所有决定再从头捋一遍golang的基础知识
-同时也为golang的爱好者们提供点入门材料.</p>
-
-<p>我们就从这个经典的 <code>Hello Word</code> 案例开始吧!(先上代码)</p>
-
-<pre><code>//HelloWord.go
-package main
-
-import &quot;fmt&quot;
-
-func main() {
-    fmt.Println(&quot;Hello, Word&quot;)
-}
-</code></pre>
-
-<p>接着我们打开终端</p>
-
-<pre><code>$ cd $GOPATH/src/***    //进入你的文件目录 
-$ go run helloWord.go  
-</code></pre>
-
-<p>毫不意外,命令会输出</p>
-
-<pre><code>Hello,Word
-</code></pre>
-
-<p>同时我们还可以这样来干</p>
-
-<pre><code>$ go build helloWord.go  
-</code></pre>
-
-<p>这样你会在当前目录下找到一个可执行的二进制文件,不需要任何其他处理下,你就可以在任何时间来运行这个二进制文件了(注：因为是静态编译，所以也不用担心在系统库更新的时候冲突，幸福感满满)</p>
-
-<pre><code>$ ./helloWord
-Helllo,Word
-</code></pre>
-
-<h4>代码详解</h4>
-
-<p>看到代码的第一行,熟悉 Java,Python 的同学会觉得很熟悉,没错golang也是使用 <code>package</code> 的来组织代码的, 一个 <code>package</code> 会包含一个或多个<code>.go</code>结束的源代码文件。每一个源文件都是以一个 <code>package xxx</code>的声明开头的，比如我们的例子里就是 <code>package main</code> 。这行声明表示该文件是属于哪一个 <code>package</code>，紧跟着是一系列 <code>import</code> 的 <code>package</code> 名，表示这个文件中引入的 <code>package</code> 。再之后是本文件本身的代码</p>
-
-<blockquote>
-<p>main.main 为函数的入口(main包 main函数)</p>
-</blockquote>
-
-<p>代码的第二句相信大家也都猜到了,导入 <code>fmt</code> 包,<br />
-<code>fmt</code> 包是干什么的呢?<br />
-<code>fmt</code> 包实现了类似 <code>C</code> 语言 <code>printf</code> 和 <code>scanf</code> 的格式化 <code>I/O</code> 。格式化动作（&rsquo;verb&rsquo;）源自C语言但更简单。</p>
-
-<p>接下让我们来看 <code>main</code> 函数, <code>main</code> 必须存在与 <code>main</code> 包内, 这是我们整个程序的入口(注：其实c系语言差不多都是这样)。main函数所做的事情就是我们程序做的事情。当然了，<code>main</code> 函数一般完成的工作是调用其它 <code>packge</code> 里的函数来完成自己的工作，比如 <code>fmt.Println</code> 。</p>
-
-<p><code>main</code> 函数内我们调用了 <code>fmt</code> 包里面定义的函数 <code>Println</code>。大家可以看到，这个函数是通过<code>&lt;pkgName&gt;.&lt;funcName&gt;</code>的方式调用的.<br />
-<code>Println</code> 函数类似与 c 语言的 <code>printf</code> ,只是在 <code>printf</code> 函数的基础上在输出最后加上一个格式化换行符.</p>
-
-<blockquote>
-<p>到此我们的 <code>helloWord.go</code> 代码分析结束<br />
-下一篇博文让我真正的走进golang <code>&lt;&lt;goalng编程基础-基本语法&gt;&gt;</code></p>
-</blockquote>
-
-                </div>
-            </div>
-
-             <div class="row">
-                <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-                   <div id="disqus_thread"></div>
-<script>
-(function() { 
-    var d = document, s = d.createElement('script');
-    s.src = '//int64.disqus.com/embed.js';
-    s.setAttribute('data-timestamp', +new Date());
-    (d.head || d.body).appendChild(s);
-})();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-
+                
+                    <div class="post-preview">
+                        <a href="http://int64.me/2017/sysbench%e7%9a%84%e4%b8%80%e7%82%b9%e6%95%b4%e7%90%86.html">
+                            <span>
+                            sysbench的一点整理
+                            </span>
+                        </a>
+                    </div>
+                
                 </div>
             </div>
         </div>
