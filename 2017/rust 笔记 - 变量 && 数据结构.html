@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -9,7 +9,7 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title>About Me</title>
+    <title>rust 笔记 - 变量 &amp;&amp; 数据结构</title>
 
     
     <link href="/static/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
@@ -24,8 +24,8 @@
 </head>
 
 
- <body>
-  
+<body>
+ 
  <nav class="navbar navbar-default navbar-custom navbar-fixed-top">
      <div class="container-fluid">
          
@@ -59,14 +59,16 @@
      
  </nav>
 
-    <header class="intro-header" style="background-image: url('/static/img/about-bg.jpg')">
+
+    
+    
+    <header class="intro-header" style="background-image: url('/static/img/post-bg.jpg')">
         <div class="container">
             <div class="row">
                 <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-                    <div class="page-heading">
-                        <h1>About Me</h1>
-                        <hr class="small">
-                        <span class="subheading">This is what I do.</span>
+                    <div class="post-heading">
+                        <h1>rust 笔记 - 变量 &amp;&amp; 数据结构</h1>
+                        <span class="meta">Posted by <a href="#">cwen</a> 2017-07-02</span>
                     </div>
                 </div>
             </div>
@@ -74,45 +76,100 @@
     </header>
 
     
-    <div class="container">
-        <div class="row">
-            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-                <h3>我是谁 ？</h3>
-
-<ul>
-<li>喜欢Linux，喜爱自由</li>
-<li>在饿了么呆过几个月</li>
-<li>现在， 在 <a href="http://pingcap.com">pingcap</a> 搬砖</li>
-</ul>
-
-<h3>关于博客</h3>
-
-<ul>
-<li>使用 <a href="https://github.com/cwen0/ljgo">ljgo</a>, 自己闲时写的静态博客生产器</li>
-<li>用来记录学习，如有错误还请指正</li>
-<li>用来分享交流，希望认识一些志同道合的小伙伴，共同学习，共同进步</li>
-</ul>
-
-<h3>欢迎拍砖</h3>
-
-<ul>
-<li>Github： <del><a href="https://github.com/cwen-coder">https://github.com/cwen-coder</a></del>  <a href="https://github.com/cwen0">https://github.com/cwen0</a></li>
-<li>邮箱：<a href="mailto:yincwengo@gmail.com">yincwengo@gmail.com</a></li>
-</ul>
-
-<h3>友链</h3>
-
-<ul>
-<li><a href="http://www.igouc.com">igouc</a> - 大学一起混了四年的小伙伴, 可爱小码农, Javaer</li>
-<li><a href="http://0xffff.me">dongxu&rsquo;s blog</a> - 我司CTO，各种 Title 略, 大牛</li>
-<li><a href="http://pingcap.com/bloglist-zh">PingCAP&rsquo;s blog</a> - 我司团队技术博客</li>
-</ul>
-
+    <article>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                 
+                    <a href="http://int64.me/tags/%e7%ac%94%e8%ae%b0.html"><span class='glyphicon glyphicon-tags tags' aria-hidden="true" ></span>&nbsp;<span>笔记</span></a>
+                
+                    <a href="http://int64.me/tags/rust.html"><span class='glyphicon glyphicon-tags tags' aria-hidden="true" ></span>&nbsp;<span>rust</span></a>
+                
+                </div>
             </div>
-        </div>
-        <div class="row">
-            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-                <div id="disqus_thread"></div>
+            <div class="row">
+                <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                    <p>入坑 rust</p>
+
+<h2>变量</h2>
+
+<p>rust 变量默认不可变，使用 let 声明，当改变强制改变的时候，rust编译器将报错</p>
+
+<pre><code class="language-rust">fn main() {
+    let x = 5;
+    println!(&quot; x = {}&quot;, x);
+}
+</code></pre>
+
+<p>通过变量名之前加 mut 来使变量可变</p>
+
+<pre><code class="language-rust">fn main() {
+    let mut x = 5;
+    println!(&quot;The value of x is: {}&quot;, x);
+    x = 6;
+    println!(&quot;The value of x is: {}&quot;, x);
+}
+</code></pre>
+
+<h2>常量</h2>
+
+<p>使用 const 声明， 绑定到一个名称不允许改变的值</p>
+
+<pre><code class="language-rust">const MAX_POINTS: u32 = 100_000;
+</code></pre>
+
+<p>与变量的区别：</p>
+
+<ul>
+<li>不允许对常量使用 mut：常量不光默认不能变，它总是不能变。</li>
+<li>声明常量使用 const 关键字而不是 let，而且必须注明值的类型。</li>
+<li>常量可以在任何作用域声明，包括全局作用域，这在一个值需要被很多部分的代码用到时很有用。</li>
+<li>最后一个区别是常量只能用于常量表达式，而不能作为函数调用的结果，或任何其他只在运行时计算的值。</li>
+</ul>
+
+<h2>数据类型</h2>
+
+<p>Rust 有四种基本的标量类型：整型、浮点型、布尔类型和字符类型， Rust 有两个原生的复合类型：元组（tuple）和数组（array）。</p>
+
+<h3>元组</h3>
+
+<p>元组可以将其他类型组合进一个复合类型的主要方式。</p>
+
+<pre><code class="language-rust">fn main() {
+    let tup: (i32, f64, u8) = (500, 6.4, 1);
+}
+</code></pre>
+
+<p>tup变量绑定了整个元组，因为元组被认为是一个单独的复合元素。为了从元组中获取单个的值，可以使用模式匹配（pattern matching）来解构（destructure ）元组，像这样：</p>
+
+<pre><code class="language-rust">fn main() {
+    let tup = (500, 6.4, 1);
+
+    let (x, y, z) = tup;
+
+    println!(&quot;The value of y is: {}&quot;, y);
+}
+</code></pre>
+
+<p>除了使用模式匹配解构之外，也可以使用点号（.）后跟值的索引来直接访问他们。</p>
+
+<h3>数组</h3>
+
+<p>另一个获取一个多个值集合的方式是数组（array）。与元组不同，数组中的每个元素的类型必须相同。Rust 中的数组与一些其他语言中的数组不同，因为 Rust 中的数组是固定长度的：一旦声明，他们的长度不能增长或缩小。</p>
+
+<p>Rust 中数组的值位于中括号中的逗号分隔的列表中：</p>
+
+<pre><code class="language-rust">fn main() {
+    let a = [1, 2, 3, 4, 5];
+}
+</code></pre>
+
+                </div>
+            </div>
+
+             <div class="row">
+                <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                   <div id="disqus_thread"></div>
 <script>
 (function() { 
     var d = document, s = d.createElement('script');
@@ -123,12 +180,13 @@
 </script>
 <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
 
+                </div>
             </div>
         </div>
-    </div>
-
+    </article>
+    
     <hr>
-     
+ 
 <footer>
     <div class="container">
         <div class="row">
