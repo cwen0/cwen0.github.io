@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>rust 笔记 - 函数 &amp;&amp; 控制流</title>
+
+    
+    <link href="/static/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+    
+    <link href="/static/css/clean-blog.css" rel="stylesheet">
+
+    
+    <link href="/static/vendor/font-awesome/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+
+
+</head>
+
+
+<body>
+ 
+ <nav class="navbar navbar-default navbar-custom navbar-fixed-top">
+     <div class="container-fluid">
+         
+         <div class="navbar-header page-scroll">
+             <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                 <span class="sr-only">Toggle navigation</span>
+                 Menu <i class="fa fa-bars"></i>
+             </button>
+             <a class="navbar-brand" href="http://int64.me/index.html">cwen</a>
+         </div>
+
+         
+         <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+             <ul class="nav navbar-nav navbar-right">
+                 <li>
+                     <a href="http://int64.me/index.html">Home</a>
+                 </li>
+                 <li>
+                     <a href="http://int64.me/archive.html">Archive</a>
+                 </li>
+                 <li>
+                     <a href="http://int64.me/about.html">About</a>
+                 </li>
+                 <li>
+                     <a href="http://int64.me/atom.xml">RSS</a>
+                 </li>
+             </ul>
+         </div>
+         
+     </div>
+     
+ </nav>
+
+
+    
+    
+    <header class="intro-header" style="background-image: url('/static/img/post-bg.jpg')">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                    <div class="post-heading">
+                        <h1>rust 笔记 - 函数 &amp;&amp; 控制流</h1>
+                        <span class="meta">Posted by <a href="#">cwen</a> 2017-07-03</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    
+    <article>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                 
+                    <a href="http://int64.me/tags/%e7%ac%94%e8%ae%b0.html"><span class='glyphicon glyphicon-tags tags' aria-hidden="true" ></span>&nbsp;<span>笔记</span></a>
+                
+                    <a href="http://int64.me/tags/rust.html"><span class='glyphicon glyphicon-tags tags' aria-hidden="true" ></span>&nbsp;<span>rust</span></a>
+                
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                    <p>入坑 rust</p>
+
+<h2>函数</h2>
+
+<p>Rust 代码使用 snake case 作为函数和变量名称的规范风格，在 snake case 中，所有字母都是小写并使用下划线分隔单词。Rust 中的函数定义以fn开始并在函数名后跟一对括号。大括号告诉编译器哪里是函数体的开始和结尾。</p>
+
+<pre><code class="language-rust">fn main() {
+    another_function(5);
+}
+
+fn another_function(x: i32) {
+    println!(&quot;The value of x is: {}&quot;, x);
+}
+</code></pre>
+
+<h2>语句和表达式</h2>
+
+<ul>
+<li>语句执行一些操作但不返回的指令</li>
+</ul>
+
+<pre><code class="language-rust">fn main() {
+    let x = 4;
+}
+</code></pre>
+
+<ul>
+<li>表达式计算并产生一个值。函数调用是一个表达式。宏调用是一个表达式。我们用来创新建作用域的大括号（代码块），{}，也是一个表达式</li>
+</ul>
+
+<pre><code class="language-rust">fn main() {
+    let x = 5;
+
+    let y = {
+        let x = 3;
+        x + 1
+    };
+
+    println!(&quot;The value of y is: {}&quot;, y);
+}
+</code></pre>
+
+<h2>函数返回值</h2>
+
+<p>可以向调用它的代码返回值。并不对返回值命名，不过会在一个箭头（-&gt;）后声明它的类型。在 Rust 中，函数的返回值等同于函数体最后一个表达式的值。</p>
+
+<pre><code class="language-rust">fn five() -&gt; i32 {
+    5
+}
+
+fn main() {
+    let x = five();
+
+    println!(&quot;The value of x is: {}&quot;, x);
+}
+</code></pre>
+
+<h2>if 表达式</h2>
+
+<p>与大多数编程语言类似，if 用来控制分支，代码中的条件必须是bool</p>
+
+<pre><code class="language-rust">fn main() {
+    let number = 6;
+    if number % 4 == 0 {
+        println!(&quot;number is divisible by 4&quot;);
+    } else if number % 3 == 0 {
+        println!(&quot;number is divisible by 3&quot;);
+    } else if number % 2 == 0 {
+        println!(&quot;number is divisible by 2&quot;);
+    } else {
+        println!(&quot;number is not divisible by 4, 3, or 2&quot;);
+    }
+    // 当 else if 过多的时候就该尝试重构代码了(match替换)
+}
+</code></pre>
+
+<p>来点不一样的，let 语句中使用 if</p>
+
+<pre><code class="language-rust">fn main() {
+    let condition = true;
+    let number = if condition {
+        5
+    } else {
+        6
+    };
+    println!(&quot;The value of number is: {}&quot;, number);
+}
+
+</code></pre>
+
+<p>注意点： if的每个分支的可能的返回值都必须是相同类型；</p>
+
+<h2>循环</h2>
+
+<p>Rust 有三种循环类型：loop、while和for。</p>
+
+<h3>loop 循环</h3>
+
+<p>loop关键字告诉 Rust 一遍又一遍的执行一段代码直到你明确要求停止(比如break)。</p>
+
+<pre><code class="language-rust">fn main() {
+    let mut index = 0;
+    loop {
+        println!(&quot;again!&quot;);
+        index = index + 1;
+        if index &gt;= 10 {
+            println!(&quot;done&quot;);
+            break;
+        }
+    }
+}
+</code></pre>
+
+<h3>while 循环 &amp;&amp; for 循环</h3>
+
+<pre><code class="language-rust">fn main() {
+    let a = [10, 20, 30, 40, 50];
+    let mut index = 0;
+    // while 循环
+    while index &lt; 5 {
+        println!(&quot;the value is: {}&quot;, a[index]);
+
+        index = index + 1;
+    }
+    // for 循环
+    for element in a.iter() {
+        println!(&quot;the value is: {}&quot;, element);
+    }
+}
+</code></pre>
+
+                </div>
+            </div>
+
+             <div class="row">
+                <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                   <div id="disqus_thread"></div>
+<script>
+(function() { 
+    var d = document, s = d.createElement('script');
+    s.src = '//int64.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+                </div>
+            </div>
+        </div>
+    </article>
+    
+    <hr>
+ 
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <ul class="list-inline text-center">
+                    
+                    <li>
+                        <a href="https://twitter.com/CWenYin">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+                    
+                    <li>
+                        <a href="https://www.facebook.com/cwen.yin">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-facebook fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+                    
+                    <li>
+                        <a href="https://github.com/cwen0">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+                </ul>
+                <p class="copyright text-muted">Powered by <a href="https://github.com/cwen-coder/ljgo">ljgo</a> &nbsp;  </a> &copy; 2016 &nbsp;<a href="http://int64.me">cwen</p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<script src="/static/vendor/jquery/jquery.min.js"></script>
+
+
+<script src="/static/vendor/bootstrap/js/bootstrap.min.js"></script>
+
+
+<script src="/static/js/jqBootstrapValidation.js"></script>
+<script src="/static/js/contact_me.js"></script>
+
+
+<script src="/static/js/clean-blog.js"></script>
+
+
+</body>
+
+</html>
