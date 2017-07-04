@@ -9,7 +9,7 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title>rust 笔记 - 函数 &amp;&amp; 控制流</title>
+    <title>rust 笔记 - 结构体</title>
 
     
     <link href="/static/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
@@ -67,8 +67,8 @@
             <div class="row">
                 <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
                     <div class="post-heading">
-                        <h1>rust 笔记 - 函数 &amp;&amp; 控制流</h1>
-                        <span class="meta">Posted by <a href="#">cwen</a> 2017-07-03</span>
+                        <h1>rust 笔记 - 结构体</h1>
+                        <span class="meta">Posted by <a href="#">cwen</a> 2017-07-05</span>
                     </div>
                 </div>
             </div>
@@ -91,134 +91,81 @@
                 <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
                     <p>入坑 rust</p>
 
-<h2>函数</h2>
+<h2>结构体</h2>
 
-<p>Rust 代码使用 snake case 作为函数和变量名称的规范风格，在 snake case 中，所有字母都是小写并使用下划线分隔单词。Rust 中的函数定义以fn开始并在函数名后跟一对括号。大括号告诉编译器哪里是函数体的开始和结尾。</p>
-
-<pre><code class="language-rust">fn main() {
-    another_function(5);
+<pre><code class="language-rust">// 定义
+ struct User {
+    username: String,
+    email: String,
+    sign_in_count: u64,
+    active: bool,
 }
-
-fn another_function(x: i32) {
-    println!(&quot;The value of x is: {}&quot;, x);
-}
+// 声明使用
+let user1 = User {
+    email: String::from(&quot;someone@example.com&quot;),
+    username: String::from(&quot;someusername123&quot;),
+    active: true,
+    sign_in_count: 1,
+};
 </code></pre>
 
-<h2>语句和表达式</h2>
+<p>为了从结构体中获取某个值，可以使用点号。如果我们只想要用户的邮箱地址，可以用user1.email。</p>
 
-<ul>
-<li>语句执行一些操作但不返回的指令</li>
-</ul>
+<h2>通过衍生 trait 增加实用功能</h2>
 
-<pre><code class="language-rust">fn main() {
-    let x = 4;
-}
-</code></pre>
-
-<ul>
-<li>表达式计算并产生一个值。函数调用是一个表达式。宏调用是一个表达式。我们用来创新建作用域的大括号（代码块），{}，也是一个表达式</li>
-</ul>
-
-<pre><code class="language-rust">fn main() {
-    let x = 5;
-
-    let y = {
-        let x = 3;
-        x + 1
-    };
-
-    println!(&quot;The value of y is: {}&quot;, y);
-}
-</code></pre>
-
-<h2>函数返回值</h2>
-
-<p>可以向调用它的代码返回值。并不对返回值命名，不过会在一个箭头（-&gt;）后声明它的类型。在 Rust 中，函数的返回值等同于函数体最后一个表达式的值。</p>
-
-<pre><code class="language-rust">fn five() -&gt; i32 {
-    5
+<pre><code class="language-rust">#[derive(Debug)]
+struct Rectangle {
+    length: u32,
+    width: u32,
 }
 
 fn main() {
-    let x = five();
+    let rect1 = Rectangle { length: 50, width: 30 };
 
-    println!(&quot;The value of x is: {}&quot;, x);
+    println!(&quot;rect1 is {:?}&quot;, rect1); // {} Display , {:?} Debug
 }
 </code></pre>
 
-<h2>if 表达式</h2>
+<h2>方法</h2>
 
-<p>与大多数编程语言类似，if 用来控制分支，代码中的条件必须是bool</p>
+<pre><code class="language-rust">#[derive(Debug)]
+struct Rectangle {
+    length: u32,
+    width: u32,
+}
 
-<pre><code class="language-rust">fn main() {
-    let number = 6;
-    if number % 4 == 0 {
-        println!(&quot;number is divisible by 4&quot;);
-    } else if number % 3 == 0 {
-        println!(&quot;number is divisible by 3&quot;);
-    } else if number % 2 == 0 {
-        println!(&quot;number is divisible by 2&quot;);
-    } else {
-        println!(&quot;number is not divisible by 4, 3, or 2&quot;);
+impl Rectangle {
+    fn area(&amp;self) -&gt; u32 {
+        self.length * self.width
     }
-    // 当 else if 过多的时候就该尝试重构代码了(match替换)
+}
+
+fn main() {
+    let rect1 = Rectangle { length: 50, width: 30 };
+
+    println!(
+        &quot;The area of the rectangle is {} square pixels.&quot;,
+        rect1.area()
+    );
 }
 </code></pre>
 
-<p>来点不一样的，let 语句中使用 if</p>
+<p>方法的第一个参数可以是 &amp;self / self / &amp;mut self(可变引用)</p>
 
-<pre><code class="language-rust">fn main() {
-    let condition = true;
-    let number = if condition {
-        5
-    } else {
-        6
-    };
-    println!(&quot;The value of number is: {}&quot;, number);
-}
+<h2>关联函数</h2>
 
-</code></pre>
+<p>impl块的另一个好用的功能是：允许在impl块中定义不以self作为参数的函数。这被称为关联函数（associated functions），因为他们与结构体相关联。即便如此他们也是函数而不是方法，因为他们并不作用于一个结构体的实例。你已经使用过一个关联函数了：String::from。</p>
 
-<p>注意点： if的每个分支的可能的返回值都必须是相同类型；</p>
+<p>关联函数经常被用作返回一个结构体新实例的构造函数。例如我们可以提供一个关联函数，它接受一个维度参数并且用来作为长和宽，这样可以更轻松的创建一个正方形Rectangle而不必指定两次同样的值：</p>
 
-<h2>循环</h2>
-
-<p>Rust 有三种循环类型：loop、while和for。</p>
-
-<h3>loop 循环</h3>
-
-<p>loop关键字告诉 Rust 一遍又一遍的执行一段代码直到你明确要求停止(比如break)。</p>
-
-<pre><code class="language-rust">fn main() {
-    let mut index = 0;
-    loop {
-        println!(&quot;again!&quot;);
-        index = index + 1;
-        if index &gt;= 10 {
-            println!(&quot;done&quot;);
-            break;
-        }
+<pre><code class="language-rust">impl Rectangle {
+    fn square(size: u32) -&gt; Rectangle {
+        Rectangle { length: size, width: size }
     }
 }
 </code></pre>
 
-<h3>while 循环 &amp;&amp; for 循环</h3>
-
-<pre><code class="language-rust">fn main() {
-    let a = [10, 20, 30, 40, 50];
-    let mut index = 0;
-    // while 循环
-    while index &lt; 5 {
-        println!(&quot;the value is: {}&quot;, a[index]);
-
-        index = index + 1;
-    }
-    // for 循环
-    for element in a.iter() {
-        println!(&quot;the value is: {}&quot;, element);
-    }
-}
-</code></pre>
+<p>使用结构体名和::语法来调用这个关联函数：比如let sq = Rectangle::square(3);。这个方法位于结构体的命名空间中：::语法用于关联函数和模块创建的命名空间。</p>
 
                 </div>
             </div>
