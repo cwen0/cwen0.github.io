@@ -201,34 +201,23 @@ MepReduce 的作者在 2004 时候，网络带宽是个大问题。关键所有M
 <h2>其他错误和问题</h2>
 
 <ul>
-<li>如果 master 给两个 workers 同样的 Map() task 肿么办？</li>
-</ul>
+<li><p>如果 master 给两个 workers 同样的 Map() task 肿么办？
+可能 master 错误的认为其中一个 worker 以及死亡， 它只会告诉Reduce worker其中的一个</p></li>
 
-<p>可能 master 错误的认为其中一个 worker 以及死亡， 它只会告诉Reduce worker其中的一个</p>
+<li><p>如果 master 给两个 workers 同样的 Reducer() task 肿么办？
+它们都会将同一份数据写到GFS上面，GFS的原子重命名操作会触发，先完成的获胜将结果写到GFS.</p></li>
 
-<ul>
-<li>如果 master 给两个 workers 同样的 Reducer() task 肿么办？</li>
-</ul>
-
-<p>它们都会将同一份数据写到GFS上面，GFS的原子重命名操作会触发，先完成的获胜将结果写到GFS.</p>
+<li><p>如果某一个单独的 worker 是非常的慢 &ndash; 一个掉队者？
+产生原因可能是非常糟糕的硬件设施。 master会对这些最后的任务创建第二份拷贝任务执行。</p>
 
 <ul>
-<li>如果某一个单独的 worker 是非常的慢 &ndash; 一个掉队者？</li>
+<li><p>如果由于硬件或是软件原因造成一个worker计算出一个错误的输出肿么办？
+太糟糕了！MR假设是建立在&rdquo;fail-stop&rdquo;的cpu和软件之上。</p></li>
+
+<li><p>如果 master 崩溃了肿么办？
+单独的 master 挂了， 那就挂了</p></li>
+</ul></li>
 </ul>
-
-<p>产生原因可能是非常糟糕的硬件设施。 master会对这些最后的任务创建第二份拷贝任务执行。</p>
-
-<ul>
-<li>如果由于硬件或是软件原因造成一个worker计算出一个错误的输出肿么办？</li>
-</ul>
-
-<p>太糟糕了！MR假设是建立在&rdquo;fail-stop&rdquo;的cpu和软件之上。</p>
-
-<ul>
-<li>如果 master 崩溃了肿么办？</li>
-</ul>
-
-<p>单独的 master 挂了， 那就挂了</p>
 
 <h2>关于那些MapReduce不能很好执行的应用</h2>
 
