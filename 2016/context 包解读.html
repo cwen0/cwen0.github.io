@@ -83,6 +83,8 @@
                  
                     <a href="http://int64.me/tags/%e7%bc%96%e7%a8%8b.html"><span class='glyphicon glyphicon-tags tags' aria-hidden="true" ></span>&nbsp;<span>编程</span></a>
                 
+                    <a href="http://int64.me/tags/go.html"><span class='glyphicon glyphicon-tags tags' aria-hidden="true" ></span>&nbsp;<span>go</span></a>
+                
                     <a href="http://int64.me/tags/golang.html"><span class='glyphicon glyphicon-tags tags' aria-hidden="true" ></span>&nbsp;<span>golang</span></a>
                 
                     <a href="http://int64.me/tags/gopkg.html"><span class='glyphicon glyphicon-tags tags' aria-hidden="true" ></span>&nbsp;<span>gopkg</span></a>
@@ -103,20 +105,20 @@
 
 <p><code>context</code> 包的核心</p>
 
-<pre><code>//  context 包里的方法是线程安全的，可以被多个 goroutine 使用    
-type Context interface {               
-    // 当Context 被 canceled 或是 times out 的时候，Done 返回一个被 closed 的channel      
-    Done() &lt;-chan struct{}        
-    
-    // 在 Done 的 channel被closed 后， Err 代表被关闭的原因   
-    Err() error 
+<pre><code>//  context 包里的方法是线程安全的，可以被多个 goroutine 使用
+type Context interface {
+    // 当Context 被 canceled 或是 times out 的时候，Done 返回一个被 closed 的channel
+    Done() &lt;-chan struct{}
 
-    // 如果存在，Deadline 返回Context将要关闭的时间  
+    // 在 Done 的 channel被closed 后， Err 代表被关闭的原因
+    Err() error
+
+    // 如果存在，Deadline 返回Context将要关闭的时间
     Deadline() (deadline time.Time, ok bool)
 
-    // 如果存在，Value 返回与 key 相关了的值，不存在返回 nil  
+    // 如果存在，Value 返回与 key 相关了的值，不存在返回 nil
     Value(key interface{}) interface{}
-}      
+}
 </code></pre>
 
 <p>我们不需要手动实现这个接口，<code>context</code> 包已经给我们提供了两个，一个是 <code>Background()</code>，一个是 <code>TODO()</code>，这两个函数都会返回一个 <code>Context</code> 的实例。只是返回的这两个实例都是空 <code>Context</code>。</p>
@@ -129,7 +131,7 @@ type Context interface {
 type canceler interface {
     cancel(removeFromParent bool, err error)
     Done() &lt;-chan struct{}
-}        
+}
 
 type cancelCtx struct {
     Context
@@ -178,7 +180,7 @@ func (c *cancelCtx) cancel(removeFromParent bool, err error) {
     if removeFromParent {
         removeChild(c.Context, c) // 从此处可以看到 cancelCtx的Context项是一个类似于parent的概念
     }
-}         
+}
 </code></pre>
 
 <p><code>timerCtx</code> 结构继承 <code>cancelCtx</code></p>
@@ -195,7 +197,7 @@ func (c *cancelCtx) cancel(removeFromParent bool, err error) {
 <pre><code>type valueCtx struct {
     Context
     key, val interface{}
-}        
+}
 </code></pre>
 
 <h6>主要方法</h6>
@@ -223,7 +225,7 @@ func WithValue(parent Context, key interface{}, val interface{}) Context
 <li>不要把 <code>Context</code> 存在一个结构体当中，显式地传入函数。<code>Context</code> 变量需要作为第一个参数使用，一般命名为<code>ctx</code></li>
 <li>即使方法允许，也不要传入一个 <code>nil</code> 的 <code>Context</code> ，如果你不确定你要用什么 <code>Context</code> 的时候传一个 <code>context.TODO</code></li>
 <li>使用 <code>context</code> 的 <code>Value</code> 相关方法只应该用于在程序和接口中传递的和请求相关的元数据，不要用它来传递一些可选的参数</li>
-<li>同样的 <code>Context</code> 可以用来传递到不同的 <code>goroutine</code> 中，<code>Context</code> 在多个<code>goroutine</code> 中是安全的<br /></li>
+<li>同样的 <code>Context</code> 可以用来传递到不同的 <code>goroutine</code> 中，<code>Context</code> 在多个<code>goroutine</code> 中是安全的</li>
 </ul>
 
 <h4>使用示例</h4>
@@ -296,16 +298,16 @@ func main() {
 
 </code></pre>
 
-<p>官方完整示例:<br />
-<a href="https://blog.golang.org/context/server/server.go">server</a><br />
-<a href="https://blog.golang.org/context/userip/userip.go">userip</a><br />
+<p>官方完整示例:
+<a href="https://blog.golang.org/context/server/server.go">server</a>
+<a href="https://blog.golang.org/context/userip/userip.go">userip</a>
 <a href="https://blog.golang.org/context/google/google.go">google</a></p>
 
 <blockquote>
-<p>部分参考：<br />
-<a href="http://studygolang.com/articles/5131">go源码解读</a><br />
-<a href="https://github.com/eleme/sre/blob/master/context.md">关于 Golang 中的 context 包的介绍</a><br />
-<a href="http://blog.golang.org/context">官方博客</a><br />
+<p>部分参考：
+<a href="http://studygolang.com/articles/5131">go源码解读</a>
+<a href="https://github.com/eleme/sre/blob/master/context.md">关于 Golang 中的 context 包的介绍</a>
+<a href="http://blog.golang.org/context">官方博客</a>
 Thanks</p>
 </blockquote>
 

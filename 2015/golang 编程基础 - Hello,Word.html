@@ -83,6 +83,8 @@
                  
                     <a href="http://int64.me/tags/%e7%bc%96%e7%a8%8b.html"><span class='glyphicon glyphicon-tags tags' aria-hidden="true" ></span>&nbsp;<span>编程</span></a>
                 
+                    <a href="http://int64.me/tags/go.html"><span class='glyphicon glyphicon-tags tags' aria-hidden="true" ></span>&nbsp;<span>go</span></a>
+                
                     <a href="http://int64.me/tags/golang.html"><span class='glyphicon glyphicon-tags tags' aria-hidden="true" ></span>&nbsp;<span>golang</span></a>
                 
                 </div>
@@ -106,8 +108,8 @@ func main() {
 
 <p>接着我们打开终端</p>
 
-<pre><code>$ cd $GOPATH/src/***    //进入你的文件目录 
-$ go run helloWord.go  
+<pre><code>$ cd $GOPATH/src/***    //进入你的文件目录
+$ go run helloWord.go
 </code></pre>
 
 <p>毫不意外,命令会输出</p>
@@ -117,7 +119,7 @@ $ go run helloWord.go
 
 <p>同时我们还可以这样来干</p>
 
-<pre><code>$ go build helloWord.go  
+<pre><code>$ go build helloWord.go
 </code></pre>
 
 <p>这样你会在当前目录下找到一个可执行的二进制文件,不需要任何其他处理下,你就可以在任何时间来运行这个二进制文件了(注：因为是静态编译，所以也不用担心在系统库更新的时候冲突，幸福感满满)</p>
@@ -134,17 +136,17 @@ Helllo,Word
 <p>main.main 为函数的入口(main包 main函数)</p>
 </blockquote>
 
-<p>代码的第二句相信大家也都猜到了,导入 <code>fmt</code> 包,<br />
-<code>fmt</code> 包是干什么的呢?<br />
+<p>代码的第二句相信大家也都猜到了,导入 <code>fmt</code> 包,
+<code>fmt</code> 包是干什么的呢?
 <code>fmt</code> 包实现了类似 <code>C</code> 语言 <code>printf</code> 和 <code>scanf</code> 的格式化 <code>I/O</code> 。格式化动作（&rsquo;verb&rsquo;）源自C语言但更简单。</p>
 
 <p>接下让我们来看 <code>main</code> 函数, <code>main</code> 必须存在与 <code>main</code> 包内, 这是我们整个程序的入口(注：其实c系语言差不多都是这样)。main函数所做的事情就是我们程序做的事情。当然了，<code>main</code> 函数一般完成的工作是调用其它 <code>packge</code> 里的函数来完成自己的工作，比如 <code>fmt.Println</code> 。</p>
 
-<p><code>main</code> 函数内我们调用了 <code>fmt</code> 包里面定义的函数 <code>Println</code>。大家可以看到，这个函数是通过<code>&lt;pkgName&gt;.&lt;funcName&gt;</code>的方式调用的.<br />
+<p><code>main</code> 函数内我们调用了 <code>fmt</code> 包里面定义的函数 <code>Println</code>。大家可以看到，这个函数是通过<code>&lt;pkgName&gt;.&lt;funcName&gt;</code>的方式调用的.
 <code>Println</code> 函数类似与 c 语言的 <code>printf</code> ,只是在 <code>printf</code> 函数的基础上在输出最后加上一个格式化换行符.</p>
 
 <blockquote>
-<p>到此我们的 <code>helloWord.go</code> 代码分析结束<br />
+<p>到此我们的 <code>helloWord.go</code> 代码分析结束
 下一篇博文让我真正的走进golang <code>&lt;&lt;goalng编程基础-基本语法&gt;&gt;</code></p>
 </blockquote>
 
