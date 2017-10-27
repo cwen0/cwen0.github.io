@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Leader Transfer In TiKV</title>
+
+    
+    <link href="/static/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+    
+    <link href="/static/css/clean-blog.css" rel="stylesheet">
+
+    
+    <link href="/static/vendor/font-awesome/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+
+
+</head>
+
+
+<body>
+ 
+ <nav class="navbar navbar-default navbar-custom navbar-fixed-top">
+     <div class="container-fluid">
+         
+         <div class="navbar-header page-scroll">
+             <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                 <span class="sr-only">Toggle navigation</span>
+                 Menu <i class="fa fa-bars"></i>
+             </button>
+             <a class="navbar-brand" href="http://int64.me/index.html">cwen</a>
+         </div>
+
+         
+         <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+             <ul class="nav navbar-nav navbar-right">
+                 <li>
+                     <a href="http://int64.me/index.html">Home</a>
+                 </li>
+                 <li>
+                     <a href="http://int64.me/archive.html">Archive</a>
+                 </li>
+                 <li>
+                     <a href="http://int64.me/about.html">About</a>
+                 </li>
+                 <li>
+                     <a href="http://int64.me/atom.xml">RSS</a>
+                 </li>
+             </ul>
+         </div>
+         
+     </div>
+     
+ </nav>
+
+
+    
+    
+    <header class="intro-header" style="background-image: url('/static/img/post-bg.jpg')">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                    <div class="post-heading">
+                        <h1>Leader Transfer In TiKV</h1>
+                        <span class="meta">Posted by <a href="#">cwen</a> 2017-10-28</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    
+    <article>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                 
+                    <a href="http://int64.me/tags/%e5%88%86%e5%b8%83%e5%bc%8f.html"><span class='glyphicon glyphicon-tags tags' aria-hidden="true" ></span>&nbsp;<span>分布式</span></a>
+                
+                    <a href="http://int64.me/tags/Raft.html"><span class='glyphicon glyphicon-tags tags' aria-hidden="true" ></span>&nbsp;<span>Raft</span></a>
+                
+                    <a href="http://int64.me/tags/TiKV.html"><span class='glyphicon glyphicon-tags tags' aria-hidden="true" ></span>&nbsp;<span>TiKV</span></a>
+                
+                    <a href="http://int64.me/tags/TiDB.html"><span class='glyphicon glyphicon-tags tags' aria-hidden="true" ></span>&nbsp;<span>TiDB</span></a>
+                
+                    <a href="http://int64.me/tags/PD.html"><span class='glyphicon glyphicon-tags tags' aria-hidden="true" ></span>&nbsp;<span>PD</span></a>
+                
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                    <p>在 TiKV 中，PD 当发现 TiKV 实例上 region 出现 leader 不均匀的时候，会尝试将 leader 从数量比较多的地方 transfer 到其地方，具体调度指令由 PD 发出，TiKV 接收到 PD 的 transfer leader 指令，调用 raft 操作执行真正操作&hellip;</p>
+
+<h2>先看 PD</h2>
+
+<p>PD（Placement Driver）在 TiDB 集群里面主要负责 meta 信息存储，以及管理和调度 TiKV 集群， 所有可以想象 Transfer Leader 的命令显然是有 PD 发送到 TiKV。</p>
+
+<p>PD 给 TiKV 发送 Transfer Leader 命令，可以分为一下两类</p>
+
+<ol>
+<li>人为干预调度</li>
+</ol>
+
+<p>PD 提供 pd-ctl 命令行工具，或是通过 api 接口显示的将一个 region 的 leader 调度到某一个 store 上。</p>
+
+<pre><code>&gt;&gt; operator add transfer-leader 1 2         // 把 region 1 的 leader 调度到 store 2
+&gt;&gt; operator add transfer-region 1 2 3 4     // 把 region 1 调度到 store 2,3,4
+</code></pre>
+
+<p>pd-ctl 实际上也是请求 PD 的api，具体请求过程略，有兴趣的同学可以去研究一下 PD 的源码。</p>
+
+<pre><code>// pd/server/coordinator.go
+func (c *coordinator) sendScheduleCommand(region *core.RegionInfo, step schedule.OperatorStep) {
+        log.Infof(&quot;[region %v] send schedule command: %s&quot;, region.GetId(), step)
+        switch s := step.(type) {
+        case schedule.TransferLeader:
+                cmd := &amp;pdpb.RegionHeartbeatResponse{
+                        TransferLeader: &amp;pdpb.TransferLeader{
+                                Peer: region.GetStorePeer(s.ToStore),
+                        },
+                }
+        .....
+}
+
+</code></pre>
+
+<p>从上边代码可以看到，其实 PD 的调度命令是通过 heartbeat 来进行传递的，PD 和 TiKV 之间是通过 grpc 通信，当收到到这个操作指令的时候，就会调用 grpc 的send 方法，将请求发送给 TiKV。</p>
+
+<ol>
+<li>Leader 分布不均匀或是热点过于集中，PD 自身调度</li>
+</ol>
+
+<p>PD 的主要作用就是负责管理和调度 TiKV， 如果 TiKV 各个节点上出现了 leader 分布补均匀或是热点 leader 过于集中在某一个 TiKV 节点上的时候，这时候 PD 就会作出干预，进行 transfer leader 等操作。PD 是根据每个 store 或是 leader peer 发送过来的心跳包，来作统计并决定执行哪些操作，每次收到 Region Leader 发来的心跳包时，PD 都会检查是否有对这个 Region 待进行的操作，通过心跳包的回复消息，将需要进行的操作返回给 Region Leader，并在后面的心跳包中监测执行结果。注意这里的操作只是给 Region Leader 的建议，并不保证一定能得到执行，具体是否会执行以及什么时候执行，由 Region Leader 自己根据当前自身状态来定。（后面两句话直接 copy 自 <a href="https://pingcap.com/blog-tidb-internal-3-zh）。">https://pingcap.com/blog-tidb-internal-3-zh）。</a></p>
+
+<pre><code>// HandleRegionHeartbeat processes RegionInfo reports from client.
+func (c *RaftCluster) HandleRegionHeartbeat(region *core.RegionInfo) error {
+        if err := c.cachedCluster.handleRegionHeartbeat(region); err != nil {
+                return errors.Trace(err)
+        }
+
+        // If the region peer count is 0, then we should not handle this.
+        if len(region.GetPeers()) == 0 {
+                log.Warnf(&quot;invalid region, zero region peer count - %v&quot;, region)
+                return errors.Errorf(&quot;invalid region, zero region peer count - %v&quot;, region)
+        }
+
+        c.coordinator.dispatch(region)
+        return nil
+}
+</code></pre>
+
+<p>这个函数处理来自 leader peer 的heartbeat， <code>handleRegionHeartbeat</code> 主要负责更相关region 的信息， 我们主要还是关系 如何发送操作指令，想当然就是 <code>c.coordinator.dispatch(region)</code> 这个函数干的事情了。</p>
+
+<pre><code>func (c *coordinator) dispatch(region *core.RegionInfo) {
+       // Check existed operator.
+       if op := c.getOperator(region.GetId()); op != nil {
+               timeout := op.IsTimeout()
+               if step := op.Check(region); step != nil &amp;&amp; !timeout {
+                       operatorCounter.WithLabelValues(op.Desc(), &quot;check&quot;).Inc()
+                       c.sendScheduleCommand(region, step)
+                       return
+               }
+               if op.IsFinish() {
+                       log.Infof(&quot;[region %v] operator finish: %s&quot;, region.GetId(), op)
+                       operatorCounter.WithLabelValues(op.Desc(), &quot;finish&quot;).Inc()
+                       c.removeOperator(op)
+               } else if timeout {
+                       log.Infof(&quot;[region %v] operator timeout: %s&quot;, region.GetId(), op)
+                       operatorCounter.WithLabelValues(op.Desc(), &quot;timeout&quot;).Inc()
+                       c.removeOperator(op)
+               }
+       }
+    ....
+}
+</code></pre>
+
+<p>可以看到这个函数，先检查是否存在已有的操作，这个 operator 可以有好多种，比如 <code>AddReplica、RemoveReplica、TransferLeader</code>,
+如果存在检查这个操作显示是到哪一步了，如果是没有结束并且没有超时，就会使用 <code>sendScheduleCommand</code> 通过 grpc 向这个region 在此发送此次操作。 要是以及完成或是超时分别错处响应的处理并删除这个操作。</p>
+
+<p>在看 PD 如何将 Transfer leader 这个 opertor 加到 <code>c.operators</code> 里面的</p>
+
+<pre><code>func (l *balanceLeaderScheduler) Schedule(cluster schedule.Cluster) *schedule.Operator {
+        schedulerCounter.WithLabelValues(l.GetName(), &quot;schedule&quot;).Inc()
+        region, newLeader := scheduleTransferLeader(cluster, l.GetName(), l.selector)
+        if region == nil {
+                return nil
+        }
+
+        // Skip hot regions.
+        if cluster.IsRegionHot(region.GetId()) {
+                schedulerCounter.WithLabelValues(l.GetName(), &quot;region_hot&quot;).Inc()
+                return nil
+        }
+
+        source := cluster.GetStore(region.Leader.GetStoreId())
+        target := cluster.GetStore(newLeader.GetStoreId())
+        if !shouldBalance(source, target, core.LeaderKind) {
+                schedulerCounter.WithLabelValues(l.GetName(), &quot;skip&quot;).Inc()
+                return nil
+        }
+        l.limit = adjustBalanceLimit(cluster, core.LeaderKind)
+        schedulerCounter.WithLabelValues(l.GetName(), &quot;new_opeartor&quot;).Inc()
+        step := schedule.TransferLeader{FromStore: region.Leader.GetStoreId(), ToStore: newLeader.GetStoreId()}
+        return schedule.NewOperator(&quot;balance-leader&quot;, region.GetId(), core.LeaderKind, step)
+}
+
+...
+func (c *coordinator) runScheduler(s *scheduleController) {
+        defer c.wg.Done()
+        defer s.Cleanup(c.cluster)
+
+        timer := time.NewTimer(s.GetInterval())
+        defer timer.Stop()
+
+        for {
+                select {
+                case &lt;-timer.C:
+                        timer.Reset(s.GetInterval())
+                        if !s.AllowSchedule() {
+                                continue
+                        }
+                        if op := s.Schedule(c.cluster); op != nil {
+                                c.addOperator(op)
+                        }
+
+                case &lt;-s.Ctx().Done():
+                        log.Infof(&quot;%v stopped: %v&quot;, s.GetName(), s.Ctx().Err())
+                        return
+                }
+        }
+}
+
+</code></pre>
+
+<p>可以看到<code>Schedule</code>这个函数最后返回的是一个 <code>operator</code> , <code>runScheduler</code> 调用 <code>c.addOperator</code> 将这个<code>operator</code> 加到<code>c.operators</code></p>
+
+<h2>在看 TiKV</h2>
+
+<p>接着看 TiKV 从 PD 收到 transfer leader 指令后会做哪些操作。(刚入坑 Rust，看 TiKV 还有点费劲，可能有些地方理解的有问题，还望指出来)</p>
+
+<p>TiKV 首先是要接受到 PD 发送的命令，来看一个函数，这个函数是用来处理 PD 发送的命令</p>
+
+<pre><code>fn schedule_heartbeat_receiver(&amp;mut self, handle: &amp;Handle) {
+        let ch = self.ch.clone();
+        let store_id = self.store_id;
+        let f = self.pd_client
+            .handle_region_heartbeat_response(self.store_id, move |mut resp| {
+                let region_id = resp.get_region_id();
+                let epoch = resp.take_region_epoch();
+                let peer = resp.take_target_peer();
+
+                if resp.has_change_peer() {
+                   // more
+                } else if resp.has_transfer_leader() {
+                    PD_HEARTBEAT_COUNTER_VEC
+                        .with_label_values(&amp;[&quot;transfer leader&quot;])
+                        .inc();
+
+                    let mut transfer_leader = resp.take_transfer_leader();
+                    info!(
+                        &quot;[region {}] try to transfer leader from {:?} to {:?}&quot;,
+                        region_id,
+                        peer,
+                        transfer_leader.get_peer()
+                    );
+                    let req = new_transfer_leader_request(transfer_leader.take_peer());
+                   send_admin_request(&amp;ch, region_id, epoch, peer, req, None)
+                } else {
+                    PD_HEARTBEAT_COUNTER_VEC.with_label_values(&amp;[&quot;noop&quot;]).inc();
+                }
+            })
+    // more
+}
+</code></pre>
+
+<p>这段代码很好理解，就是先从 resp 中读取到 <code>region_id</code>、<code>peer</code>，然后在判断要执行的操作是什么，当执行的操作是 <code>transfer_leader</code>的时候，先是更新一下监控，然后在从 resp 中获取到 <code>leader</code> 该 <code>transfer</code> 到什么地方, 在然后呢，就是发送这个命令去执行了。</p>
+
+<p>先看启动 启动 <code>transfer_leader</code> 函数</p>
+
+<pre><code>pub fn transfer_leader(&amp;mut self, transferee: u64) {
+     let mut m = Message::new();
+     m.set_msg_type(MessageType::MsgTransferLeader);
+     m.set_from(transferee);
+     self.raft.step(m).is_ok();
+ }
+</code></pre>
+
+<p>这个函数其实很简单，先设置一下消息类型，然后获取到目标 <code>leader</code>，<code>transferee</code> 就是目标<code>leader</code>，当然自己就是当前 <code>leader</code>。</p>
+
+<p>在看处理过程</p>
+
+<pre><code>fn handle_transfer_leader(&amp;mut self, m: &amp;Message) {
+    let lead_transferee = m.get_from();
+    let last_lead_transferee = self.lead_transferee;
+    if last_lead_transferee.is_some() {
+        if last_lead_transferee.unwrap() == lead_transferee {
+            info!(
+                &quot;{} [term {}] transfer leadership to {} is in progress, ignores request \
+                 to same node {}&quot;,
+                self.tag,
+                self.term,
+                lead_transferee,
+                lead_transferee
+            );
+            return;
+        }
+        self.abort_leader_transfer();
+        info!(
+            &quot;{} [term {}] abort previous transferring leadership to {}&quot;,
+            self.tag,
+            self.term,
+            last_lead_transferee.unwrap()
+        );
+    }
+    if lead_transferee == self.id {
+        debug!(
+            &quot;{} is already leader. Ignored transferring leadership to self&quot;,
+            self.tag
+        );
+        return;
+    }
+    // Transfer leadership to third party.
+    info!(
+        &quot;{} [term {}] starts to transfer leadership to {}&quot;,
+        self.tag,
+        self.term,
+        lead_transferee
+    );
+    // Transfer leadership should be finished in one electionTimeout
+    // so reset r.electionElapsed.
+    self.election_elapsed = 0;
+    self.lead_transferee = Some(lead_transferee);
+    if self.prs[&amp;m.get_from()].matched == self.raft_log.last_index() {
+        self.send_timeout_now(lead_transferee);
+        info!(
+            &quot;{} sends MsgTimeoutNow to {} immediately as {} already has up-to-date log&quot;,
+            self.tag,
+            lead_transferee,
+            lead_transferee
+        );
+    } else {
+        self.send_append(lead_transferee);
+    }
+}
+
+</code></pre>
+
+<p>这段代码稍有点长，我们可以一步一步的来看， 首先是进行一些检查，第一步是检查是否已经有 <code>transfer leader</code> 在执行，如果已经正在  <code>transfer leader</code> 并且目标 <code>leader</code> 相同的话，就退出这次操作，如果目标不同的话，那就 调用<code>self.abort_leader_transfer();</code> 这个函数放弃上一次正在执行的 <code>transfer leader</code>  操作。 紧接就是判断 目标 <code>leader</code>是不是自己，要是自己那就直接退出就好了，因为不需要<code>transfer leader</code>。</p>
+
+<p>下一步就是将目标leader保存在<code>leadTransferee</code>中，标示着有<code>transfer</code>正在进行，后续如果有请求<code>propose</code>进来，会检查这个<code>lead_transferee</code> 是不是存在，如果存在，其他操作就无法成功，也就是无法进行写操作。</p>
+
+<p>下一步就是检查 <code>transferee</code> 和<code>leader</code>的<code>log</code>是否一样新</p>
+
+<ul>
+<li>如果<code>log</code> 一致的话就会给<code>transferee</code>发送<code>MsgTimeoutNow</code>类型的消息，告诉<code>transferee</code>可以立即选主，不需要等到<code>election timeout</code>。</li>
+<li>如果 <code>log</code> 不一致，就会给 <code>lead_transferee</code>  发送一个<code>append</code> 的请求，追加 <code>log</code>。 ，leader在收到响应 <code>MsgAppResp</code>后,如果发现目前正处于<code>transfer leader</code> 过程中并且 <code>transferee</code>已经日志最新，则同样，给<code>transferee</code>发送<code>MsgTimeoutNow</code>。</li>
+</ul>
+
+<h2>参考</h2>
+
+<ol>
+<li><a href="https://pingcap.com/集群调度/blog-placement-driver-zh">TiKV 源码解析系列 - Placement Driver</a></li>
+<li><a href="https://pingcap.com/blog-tidb-internal-3-zh">三篇文章了解 TiDB 技术内幕 - 谈调度</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/27895034">etcd raft如何实现leadership transfer</a></li>
+<li><a href="https://github.com/pingcap/pd">PD</a></li>
+<li><a href="https://github.com/pingcap/tikv">TiKV</a></li>
+</ol>
+
+                </div>
+            </div>
+
+             <div class="row">
+                <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                   <div id="disqus_thread"></div>
+<script>
+(function() { 
+    var d = document, s = d.createElement('script');
+    s.src = '//int64.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+                </div>
+            </div>
+        </div>
+    </article>
+    
+    <hr>
+ 
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <ul class="list-inline text-center">
+                    
+                    <li>
+                        <a href="https://twitter.com/CWenYin">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+                    
+                    <li>
+                        <a href="https://www.facebook.com/cwen.yin">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-facebook fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+                    
+                    <li>
+                        <a href="https://github.com/cwen0">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+                </ul>
+                <p class="copyright text-muted">Powered by <a href="https://github.com/cwen0/ljgo">ljgo</a> &nbsp;  </a> &copy; 2017 &nbsp;<a href="http://int64.me">cwen</p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<script src="/static/vendor/jquery/jquery.min.js"></script>
+
+
+<script src="/static/vendor/bootstrap/js/bootstrap.min.js"></script>
+
+
+<script src="/static/js/jqBootstrapValidation.js"></script>
+<script src="/static/js/contact_me.js"></script>
+
+
+<script src="/static/js/clean-blog.js"></script>
+
+
+</body>
+
+</html>
