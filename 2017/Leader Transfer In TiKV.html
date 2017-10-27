@@ -103,9 +103,9 @@
 
 <p>PD 给 TiKV 发送 Transfer Leader 命令，可以分为一下两类</p>
 
-<ol>
+<ul>
 <li>人为干预调度</li>
-</ol>
+</ul>
 
 <p>PD 提供 pd-ctl 命令行工具，或是通过 api 接口显示的将一个 region 的 leader 调度到某一个 store 上。</p>
 
@@ -132,9 +132,9 @@ func (c *coordinator) sendScheduleCommand(region *core.RegionInfo, step schedule
 
 <p>从上边代码可以看到，其实 PD 的调度命令是通过 heartbeat 来进行传递的，PD 和 TiKV 之间是通过 grpc 通信，当收到到这个操作指令的时候，就会调用 grpc 的send 方法，将请求发送给 TiKV。</p>
 
-<ol>
+<ul>
 <li>Leader 分布不均匀或是热点过于集中，PD 自身调度</li>
-</ol>
+</ul>
 
 <p>PD 的主要作用就是负责管理和调度 TiKV， 如果 TiKV 各个节点上出现了 leader 分布补均匀或是热点 leader 过于集中在某一个 TiKV 节点上的时候，这时候 PD 就会作出干预，进行 transfer leader 等操作。PD 是根据每个 store 或是 leader peer 发送过来的心跳包，来作统计并决定执行哪些操作，每次收到 Region Leader 发来的心跳包时，PD 都会检查是否有对这个 Region 待进行的操作，通过心跳包的回复消息，将需要进行的操作返回给 Region Leader，并在后面的心跳包中监测执行结果。注意这里的操作只是给 Region Leader 的建议，并不保证一定能得到执行，具体是否会执行以及什么时候执行，由 Region Leader 自己根据当前自身状态来定。（后面两句话直接 copy 自 <a href="https://pingcap.com/blog-tidb-internal-3-zh）。">https://pingcap.com/blog-tidb-internal-3-zh）。</a></p>
 
