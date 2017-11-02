@@ -276,13 +276,12 @@ type node struct {
 </code></pre>
 
 <ul>
-<li>propc: propc是一个没有buffer的channel，应用通过Propose接口写入的请求被封装成Message被push到propc中，node的run方法从propc中pop出Message，append自己的raft log中，并且将Message放入mailbox中(raft结构体中的msgs []pb.Message)，这个msgs会被封装在Ready中，被应用从readyc中取出来，然后通过应用自定义的transport发送出去。</li>
+<li><p>propc: propc是一个没有buffer的channel，应用通过Propose接口写入的请求被封装成Message被push到propc中，node的run方法从propc中pop出Message，append自己的raft log中，并且将Message放入mailbox中(raft结构体中的msgs []pb.Message)，这个msgs会被封装在Ready中，被应用从readyc中取出来，然后通过应用自定义的transport发送出去。</p></li>
 
 <li><p>recvc: 应用自定义的transport在收到Message后需要调用</p>
 
 <pre><code>func (n *node) Step(ctx context.Context, m pb.Message) error
 </code></pre>
-
 <p>来把Message放入recvc中，经过一些处理后，同样，会把需要发送的Message放入到对应peers的mailbox中。后续通过自定义transport发送出去。</p></li>
 
 <li><p>readyc／advancec: readyc和advancec都是没有buffer的channel，node.run()内部把相关的一些状态更新打包成Ready结构体(其中一种状态就是上面提到的msgs)放入readyc中。应用从readyc中pop出Ready中，对相应的状态进行处理，处理完成后，调用</p></li>
