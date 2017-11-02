@@ -102,10 +102,10 @@
 <h3><strong>定义</strong>: 是一个分布式系统中事件集合上满足如下条件的最小关系：</h3>
 
 <ol>
-<li>如果a和b是同一个process内的事件，且a在b之前发生，那么 $a-&gt;b$。</li>
-<li>如果a是一个process发送消息事件，b是另一个进程接收该消息的事件，那么$a-&gt;b$。</li>
-<li>$∀a,b,c,a→b,b→c⟹a→c$ (即“在……之前发生”的关系具备传递性（transitivity）)
-如果 $a↛b,b↛a$， 那么称 a 和 b 是并发（concurrent）的。
+<li>如果a和b是同一个process内的事件，且a在b之前发生，那么 <code>$$a-&gt;b</code>。</li>
+<li>如果a是一个process发送消息事件，b是另一个进程接收该消息的事件，那么<code>$$a-&gt;b</code>。</li>
+<li><code>$$∀a,b,c,a→b,b→c⟹a→c</code> (即“在……之前发生”的关系具备传递性（transitivity）)
+如果 <code>$$a↛b,b↛a</code>， 那么称 a 和 b 是并发（concurrent）的。
 根据定义，可以知道happen-before关系 <code>-&gt;</code> 是一个系统所有事件集合之上的反自反偏序关系。</li>
 </ol>
 
@@ -113,7 +113,8 @@
 
 <p><strong>定义</strong>：定义为一个以事件为输入，输出为某个有序数的函数C。若对所有事件恒满足：</p>
 
-<p>$$∀a,b\in E,a→b⟹C(a)(b)$$</p>
+<pre><code class="language-math">∀a,b\in E,a→b⟹C(a)&lt;C(b)
+</code></pre>
 
 <p>则称该函数C满足时钟约束。</p>
 
@@ -129,7 +130,7 @@
 
 <h2>全序关系</h2>
 
-<p>如果$C(a) = C(b)$，那a、b事件的顺序又是怎样的？假设a、b分别在节点P、Q上发生，Pi、Qj分别表示我们给P、Q的编号，如果 $C(a) = C(b)$ 并且 Pi &lt; Qj，同样定义为a发生在b之前，记作 $a =&gt; b$。假如我们对下图的A、B、C分别编号$Ai = 1、Bj = 2、Ck = 3$，因 $C(B4) = C(C3)$ 并且$ Bj &lt; Ck$，则 $B4 =&gt; C3$。</p>
+<p>如果<code>$$C(a) = C(b)</code>，那a、b事件的顺序又是怎样的？假设a、b分别在节点P、Q上发生，Pi、Qj分别表示我们给P、Q的编号，如果 <code>$$C(a) = C(b)</code> 并且 Pi &lt; Qj，同样定义为a发生在b之前，记作 <code>$$a =&gt; b</code>。假如我们对下图的A、B、C分别编号<code>$$Ai = 1、Bj = 2、Ck = 3</code>，因 <code>$$C(B4) = C(C3)</code> 并且<code>$$Bj &lt; Ck</code>，则 <code>$$B4 =&gt; C3</code>。</p>
 
 <p>通过以上定义，我们可以对所有事件排序、获得事件的全序关系(total order)。</p>
 
@@ -143,11 +144,13 @@
 
 <h2>强时钟约束</h2>
 
-<p>在上述方案中，时钟约束只定义了系统内部的有序性（或称同步性），由于 $⇒$
+<p>在上述方案中，时钟约束只定义了系统内部的有序性（或称同步性），由于 <code>$$⇒</code>
 关系的任意性，系统内部的先后关系有可能和系统外部以真实时间为参考系的先后关系相互矛盾。为此，我们必须让系统也能模拟物理的时钟，从而将真实外部世界的先后顺序也考虑在内。处于系统外部的先后关系，我们定义为 (bold arrow, →→)。</p>
 
-<p><strong>定义</strong>：若对时钟函数C，满足：
-$$ ∀a,b\in E,a→→b⟹C(a)(b)$$</p>
+<p><strong>定义</strong>：若对时钟函数C，满足：</p>
+
+<pre><code class="language-math">∀a,b\in E,a→→b⟹C(a)&lt;C(b)
+</code></pre>
 
 <p>则称函数满足强时钟约束。</p>
 
