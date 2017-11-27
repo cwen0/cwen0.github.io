@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Life is magic. Coding is art.">
+    <meta name="author" content="MVCC In TiKV">
+
+    <title>MVCC In TiKV | Life is magic. Coding is art.</title>
+
+    
+    <link href="/static/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+    
+    <link href="/static/css/clean-blog.css" rel="stylesheet">
+
+    
+    <link href="/static/vendor/font-awesome/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+
+
+</head>
+
+
+<body>
+ 
+ <nav class="navbar navbar-default navbar-custom navbar-fixed-top">
+     <div class="container-fluid">
+         
+         <div class="navbar-header page-scroll">
+             <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                 <span class="sr-only">Toggle navigation</span>
+                 Menu <i class="fa fa-bars"></i>
+             </button>
+             <a class="navbar-brand" href="http://int64.me/index.html">cwen</a>
+         </div>
+
+         
+         <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+             <ul class="nav navbar-nav navbar-right">
+                 <li>
+                     <a href="http://int64.me/index.html">Home</a>
+                 </li>
+                 <li>
+                     <a href="http://int64.me/archive.html">Archive</a>
+                 </li>
+                 <li>
+                     <a href="http://int64.me/about.html">About</a>
+                 </li>
+                 <li>
+                     <a href="http://int64.me/atom.xml">RSS</a>
+                 </li>
+             </ul>
+         </div>
+         
+     </div>
+     
+ </nav>
+
+
+    
+    
+    <header class="intro-header" style="background-image: url('/static/img/post-bg.jpg')">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                    <div class="post-heading">
+                        <h1>MVCC In TiKV</h1>
+                        <span class="meta">Posted by <a href="#">cwen</a> 2017-11-28</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    
+    <article>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                 
+                    <a href="http://int64.me/tags/%e5%88%86%e5%b8%83%e5%bc%8f.html"><span class='glyphicon glyphicon-tags tags' aria-hidden="true" ></span>&nbsp;<span>分布式</span></a>
+                
+                    <a href="http://int64.me/tags/TiKV.html"><span class='glyphicon glyphicon-tags tags' aria-hidden="true" ></span>&nbsp;<span>TiKV</span></a>
+                
+                    <a href="http://int64.me/tags/%e5%88%86%e5%b8%83%e5%bc%8f%e6%95%b0%e6%8d%ae%e5%ba%93.html"><span class='glyphicon glyphicon-tags tags' aria-hidden="true" ></span>&nbsp;<span>分布式数据库</span></a>
+                
+                    <a href="http://int64.me/tags/MVCC.html"><span class='glyphicon glyphicon-tags tags' aria-hidden="true" ></span>&nbsp;<span>MVCC</span></a>
+                
+                    <a href="http://int64.me/tags/%e5%b9%b6%e5%8f%91%e6%8e%a7%e5%88%b6.html"><span class='glyphicon glyphicon-tags tags' aria-hidden="true" ></span>&nbsp;<span>并发控制</span></a>
+                
+                    <a href="http://int64.me/tags/2PL.html"><span class='glyphicon glyphicon-tags tags' aria-hidden="true" ></span>&nbsp;<span>2PL</span></a>
+                
+                    <a href="http://int64.me/tags/Transaction.html"><span class='glyphicon glyphicon-tags tags' aria-hidden="true" ></span>&nbsp;<span>Transaction</span></a>
+                
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                    <h2>乐观锁和悲观锁</h2>
+
+<h3>乐观锁</h3>
+
+<p>乐观锁呢，读写事务，在真正的提交之前，不加读/写锁，而是先看一下数据的版本/时间戳，等到真正提交的时候再看一下版本/时间戳，如果两次相同，说明别人期间没有对数据进行过修改，那么就可以放心提交。乐观体现在，访问数据时不提前加锁。在资源冲突不激烈的场合，用乐观锁性能较好。如果资源冲突严重，乐观锁的实现会导致事务提交的时候经常看到别人在他之前已经修改了数据，然后要进行回滚或者重试，还不如一上来就加锁。</p>
+
+<h3>悲观锁</h3>
+
+<p>一个读写事务在运行的过程中在访问数据之前先加读/写锁这种实现叫做悲观锁，悲观体现在，先加锁，独占数据，防止别人加锁。</p>
+
+<blockquote>
+<p>关于乐观锁悲观锁的解释 copy 自：<a href="https://www.zhihu.com/question/27876575/answer/73330077">吴镝大神知乎的回答</a>, 感觉回答的最简洁贴切</p>
+</blockquote>
+
+<h2>并发控制</h2>
+
+<h3>可串行化</h3>
+
+<p>多个事务的并发执行是正确的，当且仅当其结果与按某一次序串行地执行它们时的结果相同。我们称这种调度策略为可串行化（Serializable）的调度。</p>
+
+<p>可串行性是并发事务正确性的准则。按这个准则规定，一个给定的并发调度，当且仅当它是可串行化的，才认为是正确调度。DBMS的并发控制机制必须提供一定的手段来保证调度是可串行化的，目前DBMS普遍采用封锁方法实现并发操作调度的可串行性，从而保证调度的正确性。</p>
+
+<p>两段锁（Two-Phase Locking，简称2PL）协议就是保证并发调度可串行性的封锁协议。</p>
+
+<h3>2PL</h3>
+
+<p>两段锁（Two-Phase Locking，简称2PL）是指所有事务都必须分为两阶段对数据进行加锁和解锁：</p>
+
+<ol>
+<li>对任何数据进行读、写操作之前，首先要先申请并获得对该数据的封锁</li>
+<li>在释放一个封锁以后，事务不再获得任何其他封锁</li>
+</ol>
+
+<p>在“两段”锁协议中，事务分为两个阶段：</p>
+
+<ul>
+<li>第一阶段是获得封锁，也称为扩展阶段。这在阶段，事务可以申请获得任何数据项上的任何类型的锁，但是不能释放任何锁。</li>
+<li>第二阶段是释放封锁，也称为收缩阶段。在这阶段，事务可以释放任何数据项上的任何类型的琐，但是不能再申请任何琐。</li>
+</ul>
+
+<p>如图：</p>
+
+<p><img src="http://7xnp02.com1.z0.glb.clouddn.com/Screen%20Shot%202017-11-27%20at%2011.44.23%20PM.png" alt="" /></p>
+
+<h3>2PL 一些缺点</h3>
+
+<ul>
+<li>读锁和写锁会相互阻滞（block）。</li>
+<li>大部分事务都是只读（read-only）的，所以从事务序列（transaction-ordering）的角度来看是无害的。如果使用基于锁的隔离机制，而且如果有一段很长的读事务的话，在这段时间内这个对象就无法被改写，后面的事务就会被阻塞直到这个事务完成。这种机制对于并发性能来说影响很大。</li>
+</ul>
+
+<h3>MVCC</h3>
+
+<p>MVCC - 多版本并发控制（Multi-Version Concurrency Control）, 在 MVCC 中，每当想要更改或者删除某个数据对象时，DBMS 不会在原地去删除或这修改这个已有的数据对象本身，而是创建一个该数据对象的新的版本，这样的话同时并发的读取操作仍旧可以读取老版本的数据，而写操作就可以同时进行。这个模式的好处在于，可以让读取操作不再阻塞，事实上根本就不需要锁。这是一种非常诱人的特型，以至于在很多主流的数据库中都采用了 MVCC 的实现，比如说 PostgreSQL，Oracle，Microsoft SQL Server 等。</p>
+
+<blockquote>
+<p>此处 copy 自<a href="https://pingcap.com/blog-cn/mvcc-in-tikv/">TiKV 的 MVCC（Multi-Version Concurrency Control）机制</a></p>
+</blockquote>
+
+<h2>MVCC in TiKV</h2>
+
+<p>TiKV 目前的底层存储还是使用了 rocksdb， 也就是目前我们的所有数据也就是存在 rocksdb 内。目前 TiKV 会启动两个 rocksdb 实例，默认 rocksdb 实例将 KV 数据存储在内部的 default、write 和 lock 3 个 CF 内。</p>
+
+<ul>
+<li>default CF 存储的是真正的数据；</li>
+<li>write CF 存储的是数据的版本信息（MVCC）以及索引相关的数据；</li>
+<li>lock CF 存储的是锁信息。</li>
+</ul>
+
+<p>Raft RocksDB 实例存储 Raft log。</p>
+
+<ul>
+<li>default CF 主要存储的是 raft log。</li>
+</ul>
+
+<p>rocksdb 的 cf 是一个逻辑划分数据库的能力，也就是说做到了想多隔离的存储，但是 rocksdb 提供跨 cf 的原子写操作，不同的 cf 共用同一个 WAL，但是使用不同 memtable 和 ssl。（具体 rocksdb 相关的知识可以查阅 rocksdb 相关文档）。也就是说会有一个单独的 cf 用来存储 MVCC 的版本信息。 TiKV 的 MVCC 实现是通过在 Key 后面添加 Version 来实现，简单来说，没有 MVCC 之前，可以把 TiKV 看做这样的：</p>
+
+<pre><code>                Key1 -&gt; Value
+	            Key2 -&gt; Value
+	            ……
+	            KeyN -&gt; Value
+</code></pre>
+
+<p>有了 MVCC 之后，TiKV 的 Key 排列是这样的：</p>
+
+<pre><code>	            Key1-Version3 -&gt; Value
+	            Key1-Version2 -&gt; Value
+	            Key1-Version1 -&gt; Value
+	            ……
+	            Key2-Version4 -&gt; Value
+	            Key2-Version3 -&gt; Value
+	            Key2-Version2 -&gt; Value
+	            Key2-Version1 -&gt; Value
+	            ……
+	            KeyN-Version2 -&gt; Value
+	            KeyN-Version1 -&gt; Value
+	            ……
+</code></pre>
+
+<p>注意，对于同一个 Key 的多个版本，我们把版本号较大的放在前面，版本号小的放在后面，这样当用户通过一个 Key + Version 来获取 Value 的时候，可以将 Key 和 Version 构造出 MVCC 的 Key，也就是 Key-Version。然后可以直接 Seek(Key-Version)，定位到第一个大于等于这个 Key-Version 的位置。</p>
+
+<blockquote>
+<p>此处 copy 自申栎哥文章<a href="https://pingcap.com/blog-cn/tidb-internal-1/">三篇文章了解 TiDB 技术内幕 - 说存储</a></p>
+</blockquote>
+
+<p>现在从代码看起：</p>
+
+<p>我们来看 tikv 的 Storage pkg，可以看到这个 pkg 里面有个 mvcc pkg，没错具体的 mvcc 操作实现就是定义在 mvcc 这个 pkg 里面。</p>
+
+<h3>先看 Storage</h3>
+
+<pre><code>pub struct Storage {
+    engine: Box&lt;Engine&gt;,
+    sendch: SyncSendCh&lt;Msg&gt;,
+    handle: Arc&lt;Mutex&lt;StorageHandle&gt;&gt;,
+    ...
+}
+impl Storage {
+ pub fn start(&amp;mut self, config: &amp;Config) -&gt; Result&lt;()&gt; {
+        let mut handle = self.handle.lock().unwrap();
+        if handle.handle.is_some() {
+            return Err(box_err!(&quot;scheduler is already running&quot;));
+        }
+
+        let engine = self.engine.clone();
+        let builder = thread::Builder::new().name(thd_name!(&quot;storage-scheduler&quot;));
+        let rx = handle.receiver.take().unwrap();
+        let sched_concurrency = config.scheduler_concurrency;
+        let sched_worker_pool_size = config.scheduler_worker_pool_size;
+        let sched_pending_write_threshold = config.scheduler_pending_write_threshold.0 as usize;
+        let ch = self.sendch.clone();
+        let h = builder.spawn(move || {
+            let mut sched = Scheduler::new(
+                engine,
+                ch,
+                sched_concurrency,
+                sched_worker_pool_size,
+                sched_pending_write_threshold,
+            );
+            if let Err(e) = sched.run(rx) {
+                panic!(&quot;scheduler run err:{:?}&quot;, e);
+            }
+            info!(&quot;scheduler stopped&quot;);
+        })?;
+        handle.handle = Some(h);
+
+        Ok(())
+    }
+}
+</code></pre>
+
+<p>其实 Storage 是实际接受外部指令, Storage 内包含三个字段：</p>
+
+<ul>
+<li>Engine，数据库操作的接口，raftkv 以及 rocksdb 实现了这个接口，具体实现可以看 engine/raftkv.rs, engine/rocksdb.rs</li>
+<li>SyncSendCh, 一个 channel 内部类型是 Msg, 用来存储 scheduler event 的 channel</li>
+<li>StorageHanle, 是处理从sench 接受到指令，通过 mio 来处理 IO</li>
+</ul>
+
+<p>可以看到 Storage 最后启动了调度器，然后不断的接受客户端指令，然后在传给 scheduler, 然后调度器执行相应的过程或者调用相应的异步函数。在调度器中有两种操作类型，读和写。</p>
+
+<h3>MVCC MvccReader</h3>
+
+<pre><code>pub struct MvccReader {
+ ....
+}
+
+impl MvccReader{
+    pub fn new() {...};
+    pub fn get_statistics(&amp;self) -&gt; &amp;Statistics {...}
+    pub fn set_key_only(&amp;mut self, key_only: bool) {...}
+    pub fn load_data(&amp;mut self, key: &amp;Key, ts: u64) -&gt; Result&lt;Value&gt; {...}
+    pub fn load_lock(&amp;mut self, key: &amp;Key) -&gt; Result&lt;Option&lt;Lock&gt;&gt; {...}
+    pub fn get(&amp;mut self, key: &amp;Key, mut ts: u64) -&gt; Result&lt;Option&lt;Value&gt;&gt; {...}
+    pub fn get_txn_commit_info(
+        &amp;mut self,
+        key: &amp;Key,
+        start_ts: u64,
+    ) -&gt; Result&lt;Option&lt;(u64, WriteType)&gt;&gt; {...}
+    pub fn seek_ts(&amp;mut self, ts: u64) -&gt; Result&lt;Option&lt;Key&gt;&gt; {...}
+    pub fn seek(&amp;mut self, mut key: Key, ts: u64) -&gt; Result&lt;Option&lt;(Key, Value)&gt;&gt; {...}
+    pub fn reverse_seek(&amp;mut self, mut key: Key, ts: u64) -&gt; Result&lt;Option&lt;(Key, Value)&gt;&gt; {...}
+    ...
+}
+
+</code></pre>
+
+<p>看 MvccReader 结构很容易理解，各种读的操作。</p>
+
+<h3>MVCCTxn</h3>
+
+<pre><code>pub struct MvccTxn {
+    reader: MvccReader,
+    start_ts: u64,
+    writes: Vec&lt;Modify&gt;,
+    write_size: usize,
+}
+impl MvccTxn {
+    pub fn prewrite(
+        &amp;mut self,
+        mutation: Mutation,
+        primary: &amp;[u8],
+        options: &amp;Options,
+    ) -&gt; Result&lt;()&gt; {...}
+
+    pub fn commit(&amp;mut self, key: &amp;Key, commit_ts: u64) -&gt; Result&lt;()&gt; {...}
+    pub fn rollback(&amp;mut self, key: &amp;Key) -&gt; Result&lt;()&gt; {...}
+}
+</code></pre>
+
+<p>MVCCTxn 实现了两段提交（2-Phase Commit，2PC），整个 TiKV 事务模型的核心。在一段事务中，由两个阶段组成。</p>
+
+<ul>
+<li>Prewrite</li>
+</ul>
+
+<p>选择一个 row 作为 primary row， 余下的作为 secondary row。 对primary row 上锁. 在上锁之前，会检查是否有其他同步的锁已经上到了这个 row 上 或者是是否经有在 startTS 之后的提交操作。这两种情况都会导致冲突，一旦都冲突发生，就会回滚（rollback）。 对于 secondary row 重复以上操作。</p>
+
+<ul>
+<li>Commit</li>
+</ul>
+
+<p>Rollback 在Prewrite 过程中出现冲突的话就会被调用。</p>
+
+<ul>
+<li>Garbage Collector</li>
+</ul>
+
+<p>很容易发现，如果没有垃圾收集器（Gabage Collector） 来移除无效的版本的话，数据库中就会存有越来越多的 MVCC 版本。但是我们又不能仅仅移除某个 safe point 之前的所有版本。因为对于某个 key 来说，有可能只存在一个版本，那么这个版本就必须被保存下来。在TiKV中，如果在 safe point 前存在Put 或者Delete，那么说明之后所有的 writes 都是可以被移除的，不然的话只有Delete，Rollback和Lock 会被删除。</p>
+
+<blockquote>
+<p>此处部分 copy 自<a href="https://pingcap.com/blog-cn/mvcc-in-tikv/">TiKV 的 MVCC（Multi-Version Concurrency Control）机制</a></p>
+</blockquote>
+
+<h2>参考</h2>
+
+<ol>
+<li><a href="https://en.wikipedia.org/wiki/Two-phase_locking">Two-phase locking</a></li>
+<li><a href="https://www.zhihu.com/question/60278698">OCC和MVCC的区别是什么？</a></li>
+<li><a href="https://pingcap.com/blog-cn/tidb-internal-1/">三篇文章了解 TiDB 技术内幕 - 说存储</a></li>
+<li><a href="https://pingcap.com/blog-cn/mvcc-in-tikv/">TiKV 的 MVCC（Multi-Version Concurrency Control）机制</a></li>
+</ol>
+
+                </div>
+            </div>
+
+             <div class="row">
+                <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                   <div id="disqus_thread"></div>
+<script>
+(function() { 
+    var d = document, s = d.createElement('script');
+    s.src = '//int64.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+                </div>
+            </div>
+        </div>
+    </article>
+    
+    <hr>
+ 
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <ul class="list-inline text-center">
+                    
+                    <li>
+                        <a href="https://twitter.com/CWenYin">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+                    
+                    <li>
+                        <a href="https://www.facebook.com/cwen.yin">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-facebook fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+                    
+                    <li>
+                        <a href="https://github.com/cwen0">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+                </ul>
+                <p class="copyright text-muted">Powered by <a href="https://github.com/cwen0/ljgo">ljgo</a> &nbsp;  </a> &copy; 2017 &nbsp;<a href="http://int64.me">cwen</p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<script src="/static/vendor/jquery/jquery.min.js"></script>
+
+
+<script src="/static/vendor/bootstrap/js/bootstrap.min.js"></script>
+
+
+<script src="/static/js/jqBootstrapValidation.js"></script>
+<script src="/static/js/contact_me.js"></script>
+
+
+<script src="/static/js/clean-blog.js"></script>
+
+
+</body>
+
+</html>
