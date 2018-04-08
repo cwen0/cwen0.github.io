@@ -155,14 +155,38 @@ iperf -c 10.0.1.4   // client
 
 <p>使用 <a href="https://github.com/pingcap/tidb-ansible">tidb-ansible</a> 部署集群</p>
 
-<p>部署拓扑：
-|    ip      | |
-| &mdash;&mdash;&mdash;- | &mdash; |
-| 10.0.1.6   |  tidb / pd / sysbench |
-| 10.0.1.7   |  tikv |
-| 10.0.1.8   |  tikv |
-| 10.0.1.9   |  tikv |</p>
+<p>部署拓扑：</p>
 
+<table>
+<thead>
+<tr>
+<th>ip</th>
+<th></th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>10.0.1.6</td>
+<td>tidb / pd / sysbench</td>
+</tr>
+
+<tr>
+<td>10.0.1.7</td>
+<td>tikv</td>
+</tr>
+
+<tr>
+<td>10.0.1.8</td>
+<td>tikv</td>
+</tr>
+
+<tr>
+<td>10.0.1.9</td>
+<td>tikv</td>
+</tr>
+</tbody>
+</table>
 <p>测试流程：prepare -&gt; run</p>
 
 <p>运行测试脚本，先观察 tidb / tikv 的 cpu 使用情况（一般来说 oltp 测试，主要瓶颈会集中在 tidb 的 cpu 上，要又重点的去排查问题）</p>
