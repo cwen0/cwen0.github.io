@@ -213,7 +213,7 @@ ffffffffff700e10 g    DF .text	0000000000000016  LINUX_2.6   __vdso_time
 
 <p>其实整个 VDSO 可以看作是一个 <code>.so</code> 的文件，这样我们就可以直接使用 <code>ELF</code> 文件处理方式，来格式化 VDSO。说到这里我们实现 time skew 的基本思路已经有了：</p>
 
-<p><img src="http://note.youdao.com/yws/res/8357/WEBRESOURCEddc80ad7cd9a5977a3cf193c259b21ef" alt="image" /></p>
+<p><img src="https://github.com/cwen0/int64.me/blob/master/images/timechaos.png" alt="image" /></p>
 
 <p>上述流程图即为 Chaos Mesh 中 TimeChaos 的实现基本流程</p>
 
