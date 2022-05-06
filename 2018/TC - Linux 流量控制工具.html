@@ -172,22 +172,18 @@ TC 通过建立处理数据包队列，并定义队列中数据包被发送的�
 <h4>模拟网络延迟</h4>
 
 <ul>
-<li>添加一个固定延迟到本地网卡 eth0</li>
-</ul>
+<li><p>添加一个固定延迟到本地网卡 eth0</p>
 
 <pre><code>// delay: 100ms
 tc qdisc add dev eth0 root netem delay 100ms
-</code></pre>
+</code></pre></li>
 
-<ul>
-<li>给延迟加上上下 10ms 的波动</li>
-</ul>
+<li><p>给延迟加上上下 10ms 的波动</p>
 
 <pre><code>tc qdisc change dev eth0 root netem delay 100ms 10ms
-</code></pre>
+</code></pre></li>
 
-<ul>
-<li>加一个 25% 的相关概率</li>
+<li><p>加一个 25% 的相关概率</p></li>
 </ul>
 
 <blockquote>
@@ -199,23 +195,21 @@ Pn = 25% Pn-1 + 75% Random</p>
 </code></pre>
 
 <ul>
-<li>让波动变成正态分布的</li>
+<li>让波动变成正态分布的
+<code>
+tc qdisc change dev eth0 root netem delay 100ms 20ms distribution normal
+</code></li>
 </ul>
-
-<pre><code>tc qdisc change dev eth0 root netem delay 100ms 20ms distribution normal
-</code></pre>
 
 <h4>模拟网络丢包</h4>
 
 <ul>
-<li>设置丢包率为 1%</li>
-</ul>
+<li><p>设置丢包率为 1%</p>
 
 <pre><code>tc qdisc change dev eth0 root netem loss 0.1%
-</code></pre>
+</code></pre></li>
 
-<ul>
-<li>添加一个相关性参数</li>
+<li><p>添加一个相关性参数</p></li>
 </ul>
 
 <blockquote>
@@ -229,20 +223,20 @@ Pn = 25% Pn-1 + 75% Random</p>
 <h4>模拟数据包重复</h4>
 
 <ul>
-<li>1% 的数据包重复</li>
+<li>1% 的数据包重复
+<code>
+tc qdisc change dev eth0 root netem duplicate 1%
+</code></li>
 </ul>
-
-<pre><code>tc qdisc change dev eth0 root netem duplicate 1%
-</code></pre>
 
 <h4>模拟包损坏</h4>
 
 <ul>
-<li>2% 的包损坏</li>
+<li>2% 的包损坏
+<code>
+tc qdisc add dev eth0 root netem corrupt 2%
+</code></li>
 </ul>
-
-<pre><code>tc qdisc add dev eth0 root netem corrupt 2%
-</code></pre>
 
 <h4>模拟包乱序</h4>
 
@@ -251,29 +245,33 @@ Pn = 25% Pn-1 + 75% Random</p>
 <p>报文乱序可前面的参数不太一样，因为上面的报文问题都是独立的，针对单个报文做操作就行，而乱序则牵涉到多个报文的重组。模拟报乱序一定会用到延迟（因为模拟乱序的本质就是把一些包延迟发送），netem 有两种方法可以做。</p>
 
 <ol>
-<li><p>第一种是固定的每隔一定数量的报文就乱序一次：</p></li>
-
-<li><p>每 5th (10th, 15th&hellip;) 的包延迟 10ms</p></li>
+<li>第一种是固定的每隔一定数量的报文就乱序一次：</li>
 </ol>
 
-<pre><code>tc qdisc change dev eth0 root netem gap 5 delay 10ms
-</code></pre>
+<ul>
+<li>每 5th (10th, 15th&hellip;) 的包延迟 10ms
+<code>
+tc qdisc change dev eth0 root netem gap 5 delay 10ms
+</code></li>
+</ul>
 
 <ol>
-<li><p>第二种方法使用概率来选择乱序，相对来说更偏向实际情况一些</p></li>
-
-<li><p>25 % 的立刻发送（50% 的相关性），其余的延迟 10ms</p></li>
+<li>第二种方法使用概率来选择乱序，相对来说更偏向实际情况一些</li>
 </ol>
 
-<pre><code>tc qdisc change dev eth0 root netem delay 10ms reorder 25% 50%
-</code></pre>
+<ul>
+<li>25 % 的立刻发送（50% 的相关性），其余的延迟 10ms
+<code>
+tc qdisc change dev eth0 root netem delay 10ms reorder 25% 50%
+</code></li>
+</ul>
 
 <ol>
-<li>只使用 delay 也可能造成数据包的乱序</li>
+<li>只使用 delay 也可能造成数据包的乱序
+<code>
+tc qdisc change dev eth0 root netem delay 100ms 75ms
+</code></li>
 </ol>
-
-<pre><code> tc qdisc change dev eth0 root netem delay 100ms 75ms
-</code></pre>
 
 <blockquote>
 <p>比如 first one random 100ms, second random 25ms，这样就是会造成第一个包先于第二个包发送</p>
@@ -377,15 +375,21 @@ tc filter add dev eth0 parent ffff: protocol ip u32 match u32 0 0 flowid 1:1 act
              <div class="row">
                 <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
                    <div id="disqus_thread"></div>
-<script>
-(function() { 
-    var d = document, s = d.createElement('script');
-    s.src = '//int64.disqus.com/embed.js';
-    s.setAttribute('data-timestamp', +new Date());
-    (d.head || d.body).appendChild(s);
-})();
+
+
+<script src="https://giscus.app/client.js"
+        data-repo="cwen0/int64.me"
+        data-repo-id="MDEwOlJlcG9zaXRvcnk3MTQ1NDYyNw=="
+        data-category="General"
+        data-category-id="DIC_kwDOBEJPo84CO9pv"
+        data-mapping="title"
+        data-reactions-enabled="false"
+        data-theme="light"
+        crossorigin="anonymous"
+        async>
 </script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<noscript>Please enable JavaScript to view the comments powered by giscus.</noscript>
+
 
                 </div>
             </div>

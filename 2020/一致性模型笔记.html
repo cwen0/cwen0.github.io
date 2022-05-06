@@ -218,115 +218,131 @@
 +-------+--------+--------+--------+--------+
 | y(50) | 50     | 50     | 50     | 90     |
 +-------+--------+--------+--------+--------+
+``` 
+
+如上述示例中，初始状态 x=y=50, x+y=100, 然后 T1 写入了 x=10, 这个时候 T2 开始读取到 x=10, y=50, 这个时候 x+y=60, 打破了约束条件。
+
+### P2 - Non-Repeatable Read / Fuzzy Read
+
+Non-Repeatable Read 现象描述：T1 读取某个数据项，另一个事务 T2 修改了这个数据项目并且提交了，然后 T1 再次读取这个数据项，读取到了一个已经被 T2 更新过的数据项（可能是修改也可能是被删除） 
+
 </code></pre>
 
-<p>如上述示例中，初始状态 x=y=50, x+y=100, 然后 T1 写入了 x=10, 这个时候 T2 开始读取到 x=10, y=50, 这个时候 x+y=60, 打破了约束条件。</p>
-
-<h3>P2 - Non-Repeatable Read / Fuzzy Read</h3>
-
-<p>Non-Repeatable Read 现象描述：T1 读取某个数据项，另一个事务 T2 修改了这个数据项目并且提交了，然后 T1 再次读取这个数据项，读取到了一个已经被 T2 更新过的数据项（可能是修改也可能是被删除）</p>
-
-<pre><code>+-------+--------+--------+--------+--------+
+<p>+&mdash;&mdash;-+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+
 | T1    | Rx(50) |        |        | Ry(90) |
-+-------+--------+--------+--------+--------+
++&mdash;&mdash;-+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+
 | T2    |        | Wx(10) | Wy(90) |        |
-+-------+--------+--------+--------+--------+
++&mdash;&mdash;-+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+
 | x(50) | 50     | 10     | 10     | 10     |
-+-------+--------+--------+--------+--------+
++&mdash;&mdash;-+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+
 | y(50) | 50     | 50     | 90     | 90     |
-+-------+--------+--------+--------+--------+
++&mdash;&mdash;-+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+</p>
+
+<pre><code>
+上述示例中在 T1 还在运行的过程中，T2 已经完成了转账，但 T1 这时候能读到最新的值，也就是 x + y = 140 了，破坏了约束条件。
+
+### P3 - Phantom 
+
+Phantom 现象描述： T1 读取满足一些&lt;搜索条件&gt;的一组数据项，事务T2然后创建满足 T1 的&lt;搜索条件&gt;并提交的数据项，如果T1然后使用相同的&lt;搜索条件&gt;重复读取，它将获得与第一次读取不同的组数据项 
+
 </code></pre>
 
-<p>上述示例中在 T1 还在运行的过程中，T2 已经完成了转账，但 T1 这时候能读到最新的值，也就是 x + y = 140 了，破坏了约束条件。</p>
-
-<h3>P3 - Phantom</h3>
-
-<p>Phantom 现象描述： T1 读取满足一些&lt;搜索条件&gt;的一组数据项，事务T2然后创建满足 T1 的&lt;搜索条件&gt;并提交的数据项，如果T1然后使用相同的&lt;搜索条件&gt;重复读取，它将获得与第一次读取不同的组数据项</p>
-
-<pre><code>+----------------+-----------+--------------+--------------+--------------+
+<p>+&mdash;&mdash;&mdash;&mdash;&mdash;-+&mdash;&mdash;&mdash;&ndash;+&mdash;&mdash;&mdash;&mdash;&ndash;+&mdash;&mdash;&mdash;&mdash;&ndash;+&mdash;&mdash;&mdash;&mdash;&ndash;+
 | T1             | {a, b, c} |              |              | R(4)         |
-+----------------+-----------+--------------+--------------+--------------+
++&mdash;&mdash;&mdash;&mdash;&mdash;-+&mdash;&mdash;&mdash;&ndash;+&mdash;&mdash;&mdash;&mdash;&ndash;+&mdash;&mdash;&mdash;&mdash;&ndash;+&mdash;&mdash;&mdash;&mdash;&ndash;+
 | T2             |           | W(d)         | W(4)         |              |
-+----------------+-----------+--------------+--------------+--------------+
++&mdash;&mdash;&mdash;&mdash;&mdash;-+&mdash;&mdash;&mdash;&ndash;+&mdash;&mdash;&mdash;&mdash;&ndash;+&mdash;&mdash;&mdash;&mdash;&ndash;+&mdash;&mdash;&mdash;&mdash;&ndash;+
 | Employees      | {a, b, c} | {a, b, c, d} | {a, b, c, d} | {a, b, c, d} |
-+----------------+-----------+--------------+--------------+--------------+
++&mdash;&mdash;&mdash;&mdash;&mdash;-+&mdash;&mdash;&mdash;&ndash;+&mdash;&mdash;&mdash;&mdash;&ndash;+&mdash;&mdash;&mdash;&mdash;&ndash;+&mdash;&mdash;&mdash;&mdash;&ndash;+
 | Employee Count | 3         | 3            | 4            | 4            |
-+----------------+-----------+--------------+--------------+--------------+
++&mdash;&mdash;&mdash;&mdash;&mdash;-+&mdash;&mdash;&mdash;&ndash;+&mdash;&mdash;&mdash;&mdash;&ndash;+&mdash;&mdash;&mdash;&mdash;&ndash;+&mdash;&mdash;&mdash;&mdash;&ndash;+</p>
+
+<pre><code>假设现在 T1 按照某个条件读取到了所有雇员 a，b，c，这时候 count 是 3，然后 T2 插入了一个新的雇员 d，同时更新了 count 为 4，但这时候 T1 在读取 count 的时候会得到 4，已经跟之前读取到的 a，b，c 冲突了。
+
+### P4 - Lost Update 
+
+Lost Update 描述的现象是事务 T1 执行了跟新操作提交后，T2 也执行了跟新操作，这个时候 T1 的更新就丢失了的现象。
+
 </code></pre>
 
-<p>假设现在 T1 按照某个条件读取到了所有雇员 a，b，c，这时候 count 是 3，然后 T2 插入了一个新的雇员 d，同时更新了 count 为 4，但这时候 T1 在读取 count 的时候会得到 4，已经跟之前读取到的 a，b，c 冲突了。</p>
-
-<h3>P4 - Lost Update</h3>
-
-<p>Lost Update 描述的现象是事务 T1 执行了跟新操作提交后，T2 也执行了跟新操作，这个时候 T1 的更新就丢失了的现象。</p>
-
-<pre><code>+--------+-----+---------+---------+
+<p>+&mdash;&mdash;&ndash;+&mdash;&ndash;+&mdash;&mdash;&mdash;+&mdash;&mdash;&mdash;+
 | T1     |     |         | Wx(110) |
-+--------+-----+---------+---------+
++&mdash;&mdash;&ndash;+&mdash;&ndash;+&mdash;&mdash;&mdash;+&mdash;&mdash;&mdash;+
 | T2     |     | Wx(120) |         |
-+--------+-----+---------+---------+
++&mdash;&mdash;&ndash;+&mdash;&ndash;+&mdash;&mdash;&mdash;+&mdash;&mdash;&mdash;+
 | x(100) | 100 | 120     | 110     |
-+--------+-----+---------+---------+
++&mdash;&mdash;&ndash;+&mdash;&ndash;+&mdash;&mdash;&mdash;+&mdash;&mdash;&mdash;+</p>
+
+<pre><code>
+在上面的例子中，我们没有任何 dirty write，因为 T2 在 T1 更新之前已经提交成功，也没有任何 dirty read，因为我们在 write 之后没有任何 read 操作，但是，当整个事务结束之后，T2 的更新其实丢失了。
+
+
+### P4C - Cursor Lost Update 
+
+Cursor Lost Update 是上面 Lost Update 的一个变种，跟 SQL 的 cursor 相关。在下面的例子中，RC(x) 表明在 cursor 下面 read x，而 WC(x) 则表明在 cursor 下面写入 x。
+
 </code></pre>
 
-<p>在上面的例子中，我们没有任何 dirty write，因为 T2 在 T1 更新之前已经提交成功，也没有任何 dirty read，因为我们在 write 之后没有任何 read 操作，但是，当整个事务结束之后，T2 的更新其实丢失了。</p>
-
-<h3>P4C - Cursor Lost Update</h3>
-
-<p>Cursor Lost Update 是上面 Lost Update 的一个变种，跟 SQL 的 cursor 相关。在下面的例子中，RC(x) 表明在 cursor 下面 read x，而 WC(x) 则表明在 cursor 下面写入 x。</p>
-
-<pre><code>+--------+----------+---------+----------+
+<p>+&mdash;&mdash;&ndash;+&mdash;&mdash;&mdash;-+&mdash;&mdash;&mdash;+&mdash;&mdash;&mdash;-+
 | T1     | RCx(100) |         | Wx(110) |
-+--------+----------+---------+----------+
++&mdash;&mdash;&ndash;+&mdash;&mdash;&mdash;-+&mdash;&mdash;&mdash;+&mdash;&mdash;&mdash;-+
 | T2     |          | Wx(75) |          |
-+--------+----------+---------+----------+
++&mdash;&mdash;&ndash;+&mdash;&mdash;&mdash;-+&mdash;&mdash;&mdash;+&mdash;&mdash;&mdash;-+
 | x(100) | 100      | 75      | 110      |
-+--------+----------+---------+----------+
++&mdash;&mdash;&ndash;+&mdash;&mdash;&mdash;-+&mdash;&mdash;&mdash;+&mdash;&mdash;&mdash;-+</p>
+
+<pre><code>
+如果我们允许 T2 在 T1 RC 和 WC 之间写入数据，那么 T2 的更新也会丢失。
+
+### A5A - Read Skew
+
+Read Skew 现象描述：假设事务T1读取x，然后第二个事务T2将x和y更新并提交。如果现在T1读取y，它可能会看到不一致的状态。就历史而言，我们有异常： 
+
 </code></pre>
 
-<p>如果我们允许 T2 在 T1 RC 和 WC 之间写入数据，那么 T2 的更新也会丢失。</p>
+<p>A5A：r1 [x] &hellip; w2 [x] &hellip; w2 [y] &hellip; c2 &hellip; r1 [y] &hellip;（c1 or a1）（读偏）</p>
 
-<h3>A5A - Read Skew</h3>
+<pre><code>
+结合具体示例： 
 
-<p>Read Skew 现象描述：假设事务T1读取x，然后第二个事务T2将x和y更新并提交。如果现在T1读取y，它可能会看到不一致的状态。就历史而言，我们有异常：</p>
-
-<pre><code>A5A：r1 [x] ... w2 [x] ... w2 [y] ... c2 ... r1 [y] ...（c1 or a1）（读偏）
 </code></pre>
 
-<p>结合具体示例：</p>
-
-<pre><code>+-------+--------+--------+--------+--------+
+<p>+&mdash;&mdash;-+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+
 | T1    | Rx(50) |        |        | Ry(75) |
-+-------+--------+--------+--------+--------+
++&mdash;&mdash;-+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+
 | T2    |        | Wx(25) | Wy(75) |        |
-+-------+--------+--------+--------+--------+
++&mdash;&mdash;-+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+
 | x(50) | 50     | 25     | 25     | 25     |
-+-------+--------+--------+--------+--------+
++&mdash;&mdash;-+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+
 | y(50) | 50     | 50     | 75     | 75     |
-+-------+--------+--------+--------+--------+
++&mdash;&mdash;-+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+</p>
+
+<pre><code>
+示例中还是传统的转账例子，需要保证 x + y = 100，那么 T1 就会看到不一致的数据了。
+
+### A5B - Write Skew
+
+Write Skew 现象描述：假设T1读取与C（）一致的x和y，然后T2读取x和y，写入x和提交。然后T1写y。如果x和y之间存在约束，则可能会被违反。在历史方面：
+
 </code></pre>
 
-<p>示例中还是传统的转账例子，需要保证 x + y = 100，那么 T1 就会看到不一致的数据了。</p>
+<p>A5B：r1 [x] &hellip; r2 [y] &hellip; w1 [y] &hellip; w2 [x] &hellip;（c1 and c2 occur）（写偏）</p>
 
-<h3>A5B - Write Skew</h3>
+<pre><code>
+结合具体示例： 
 
-<p>Write Skew 现象描述：假设T1读取与C（）一致的x和y，然后T2读取x和y，写入x和提交。然后T1写y。如果x和y之间存在约束，则可能会被违反。在历史方面：</p>
-
-<pre><code>A5B：r1 [x] ... r2 [y] ... w1 [y] ... w2 [x] ...（c1 and c2 occur）（写偏）
 </code></pre>
 
-<p>结合具体示例：</p>
-
-<pre><code>+-------+--------+--------+--------+--------+
+<p>+&mdash;&mdash;-+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+
 | T1    | Rx(30) | Ry(10) | Wy(60) |        |
-+-------+--------+--------+--------+--------+
++&mdash;&mdash;-+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+
 | T2    | Rx(30) | Ry(10) |        | Wx(50) |
-+-------+--------+--------+--------+--------+
++&mdash;&mdash;-+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+
 | x(30) | 30     | 30     | 30     | 50     |
-+-------+--------+--------+--------+--------+
++&mdash;&mdash;-+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+
 | y(10) | 10     | 10     | 60     | 60     |
-+-------+--------+--------+--------+--------+
-</code></pre>
++&mdash;&mdash;-+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+&mdash;&mdash;&ndash;+
+&ldquo;`</p>
 
 <p>上述示例中，假设 x + y &lt;= 100，T1 和 T2 在执行的时候都发现满足约束，然后 T1 更新了 y，而 T2 更新了 x，然后最终结果打破了约束。</p>
 
@@ -416,15 +432,21 @@ Concurrent Objects </a><br />
              <div class="row">
                 <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
                    <div id="disqus_thread"></div>
-<script>
-(function() { 
-    var d = document, s = d.createElement('script');
-    s.src = '//int64.disqus.com/embed.js';
-    s.setAttribute('data-timestamp', +new Date());
-    (d.head || d.body).appendChild(s);
-})();
+
+
+<script src="https://giscus.app/client.js"
+        data-repo="cwen0/int64.me"
+        data-repo-id="MDEwOlJlcG9zaXRvcnk3MTQ1NDYyNw=="
+        data-category="General"
+        data-category-id="DIC_kwDOBEJPo84CO9pv"
+        data-mapping="title"
+        data-reactions-enabled="false"
+        data-theme="light"
+        crossorigin="anonymous"
+        async>
 </script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<noscript>Please enable JavaScript to view the comments powered by giscus.</noscript>
+
 
                 </div>
             </div>

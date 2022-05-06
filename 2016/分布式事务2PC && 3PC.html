@@ -94,16 +94,18 @@
 <h2>2PC</h2>
 
 <ul>
-<li><p>阶段1：请求阶段（commit-request phase，或称表决阶段，voting phase）</p></li>
+<li>阶段1：请求阶段（commit-request phase，或称表决阶段，voting phase）</li>
+</ul>
 
-<li><p>协调者节点向所有参与者节点询问是否可以执行提交操作，并开始等待各参与者节点的响应。</p></li>
+<ol>
+<li>协调者节点向所有参与者节点询问是否可以执行提交操作，并开始等待各参与者节点的响应。</li>
+<li>参与者节点执行询问发起为止的所有事务操作，并将Undo信息和Redo信息写入日志。</li>
+<li>各参与者节点响应协调者节点发起的询问。如果参与者节点的事务操作实际执行成功，则它返回一个&rdquo;同意&rdquo;消息；如果参与者节点的事务操作实际执行失败，则它返回一个&rdquo;中止&rdquo;消息。
+有时候，第一阶段也被称作投票阶段，即各参与者投票是否要继续接下来的提交操作。。</li>
+</ol>
 
-<li><p>参与者节点执行询问发起为止的所有事务操作，并将Undo信息和Redo信息写入日志。</p></li>
-
-<li><p>各参与者节点响应协调者节点发起的询问。如果参与者节点的事务操作实际执行成功，则它返回一个&rdquo;同意&rdquo;消息；如果参与者节点的事务操作实际执行失败，则它返回一个&rdquo;中止&rdquo;消息。
-有时候，第一阶段也被称作投票阶段，即各参与者投票是否要继续接下来的提交操作。。</p></li>
-
-<li><p>阶段2：提交阶段（commit phase）</p></li>
+<ul>
+<li>阶段2：提交阶段（commit phase）</li>
 </ul>
 
 <p>在该阶段，协调者将基于第一个阶段的投票结果进行决策：提交或取消。当且仅当所有的参与者同意提交事务协调者才通知所有的参与者提交事务，否则协调者将通知所有的参与者取消事务。参与者在接收到协调者发来的消息后将执行响应的操作。</p>
@@ -155,25 +157,25 @@
 <p>由于协调者的重要性，一旦协调者发生故障。参与者会一直阻塞下去。尤其在第二阶段，协调者发生故障，那么所有的参与者还都处于锁定事务资源的状态中，而无法继续完成事务操作。（如果是协调者挂掉，可以重新选举一个协调者，但是无法解决因为协调者宕机导致的参与者处于阻塞状态的问题）</p>
 
 <ul>
-<li><p>数据不一致问题</p></li>
+<li>数据不一致问题</li>
+</ul>
 
-<li><p>情形一: 协调者挂了，参与者没挂(单点故障，不会造成数据不一致)</p></li>
-
-<li><p>情形二: 参与者挂了, 协调者没挂(不会造成数据不一致)</p>
+<ol>
+<li>情形一: 协调者挂了，参与者没挂(单点故障，不会造成数据不一致)</li>
+<li>情形二: 参与者挂了, 协调者没挂(不会造成数据不一致)
 
 <ul>
 <li>挂了的参与者不会恢复， 不会造成数据不一致</li>
 <li>挂了的参与者恢复过来，如果之前有未完成的事务，直接取消掉，然后询问协调者目前我应该怎么做，协调者就会比对自己的事务执行记录和该参与者的事务执行记录，告诉他应该怎么做来保持数据的一致性</li>
 </ul></li>
-
-<li><p>参与者和协调者都挂了</p>
+<li>参与者和协调者都挂了
 
 <ul>
 <li>都在第一阶段挂了, 参与者都没有执行 commit, 在剩余的参与者中重新选出一个协调者，新的协调者在重新询问是 commit or roolback</li>
 <li>都在第二阶段挂了, 挂了的参与者在挂掉之前没有收到协调者的指令, 或者接到指令还没有来得及进行 commit or roolback 操作，这种情形下，当新的协调者被选出来之后，他同样是询问所有的参与者的情况。只要有机器执行了abort（roolback）操作或者第一阶段返回的信息是No的话，那就直接执行roolback操作。如果没有人执行abort操作，但是有机器执行了commit操作，那么就直接执行commit操作。这样，当挂掉的参与者恢复之后，只要按照协调者的指示进行事务的commit还是roolback操作就可以了。因为挂掉的机器并没有做commit或者roolback操作，而没有挂掉的机器们和新的协调者又执行了同样的操作，那么这种情况不会导致数据不一致现象。</li>
 <li>第二阶段协调者和参与者挂了，挂了的这个参与者在挂之前已经执行了操作。但是由于他挂了，没有人知道他执行了什么操作。这种情况下，新的协调者被选出来之后，如果他想负起协调者的责任的话他就只能按照之前那种情况来执行commit或者roolback操作。这样新的协调者和所有没挂掉的参与者就保持了数据的一致性，我们假定他们执行了commit。但是，这个时候，那个挂掉的参与者恢复了怎么办，因为他之前已经执行完了之前的事务，如果他执行的是commit那还好，和其他的机器保持一致了，万一他执行的是roolback操作那？这不就导致数据的不一致性了么？虽然这个时候可以再通过手段让他和协调者通信，再想办法把数据搞成一致的，但是，这段时间内他的数据状态已经是不一致的了！ <strong>2PC 无法解决这个问题，这个问题有可能导致数据不一致的</strong> ，于是就有了3PC(三阶段提交)</li>
 </ul></li>
-</ul>
+</ol>
 
 <h2>3PC</h2>
 
@@ -202,15 +204,21 @@
              <div class="row">
                 <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
                    <div id="disqus_thread"></div>
-<script>
-(function() { 
-    var d = document, s = d.createElement('script');
-    s.src = '//int64.disqus.com/embed.js';
-    s.setAttribute('data-timestamp', +new Date());
-    (d.head || d.body).appendChild(s);
-})();
+
+
+<script src="https://giscus.app/client.js"
+        data-repo="cwen0/int64.me"
+        data-repo-id="MDEwOlJlcG9zaXRvcnk3MTQ1NDYyNw=="
+        data-category="General"
+        data-category-id="DIC_kwDOBEJPo84CO9pv"
+        data-mapping="title"
+        data-reactions-enabled="false"
+        data-theme="light"
+        crossorigin="anonymous"
+        async>
 </script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<noscript>Please enable JavaScript to view the comments powered by giscus.</noscript>
+
 
                 </div>
             </div>

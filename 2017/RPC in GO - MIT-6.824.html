@@ -115,21 +115,19 @@
 <h2>RPC 理想上想把网络通信就当做函数调用一样简单</h2>
 
 <ul>
-<li>Client:</li>
+<li><p>Client:</p>
+
+<pre><code>z = fn(x,y)
+</code></pre></li>
+
+<li><p>Server:</p>
+
+<pre><code>fn(x, y) {
+    compute
+    return z
+}
+</code></pre></li>
 </ul>
-
-<pre><code>    z = fn(x,y)
-</code></pre>
-
-<ul>
-<li>Server:</li>
-</ul>
-
-<pre><code>    fn(x, y) {
-        compute
-        return z
-    }
-</code></pre>
 
 <p>RPC 的目标是这样的水平透明</p>
 
@@ -313,15 +311,21 @@ else
              <div class="row">
                 <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
                    <div id="disqus_thread"></div>
-<script>
-(function() { 
-    var d = document, s = d.createElement('script');
-    s.src = '//int64.disqus.com/embed.js';
-    s.setAttribute('data-timestamp', +new Date());
-    (d.head || d.body).appendChild(s);
-})();
+
+
+<script src="https://giscus.app/client.js"
+        data-repo="cwen0/int64.me"
+        data-repo-id="MDEwOlJlcG9zaXRvcnk3MTQ1NDYyNw=="
+        data-category="General"
+        data-category-id="DIC_kwDOBEJPo84CO9pv"
+        data-mapping="title"
+        data-reactions-enabled="false"
+        data-theme="light"
+        crossorigin="anonymous"
+        async>
 </script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<noscript>Please enable JavaScript to view the comments powered by giscus.</noscript>
+
 
                 </div>
             </div>

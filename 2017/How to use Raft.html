@@ -284,22 +284,22 @@ type node struct {
 </code></pre>
 <p>来把Message放入recvc中，经过一些处理后，同样，会把需要发送的Message放入到对应peers的mailbox中。后续通过自定义transport发送出去。</p></li>
 
-<li><p>readyc／advancec: readyc和advancec都是没有buffer的channel，node.run()内部把相关的一些状态更新打包成Ready结构体(其中一种状态就是上面提到的msgs)放入readyc中。应用从readyc中pop出Ready中，对相应的状态进行处理，处理完成后，调用</p></li>
-</ul>
+<li><p>readyc／advancec: readyc和advancec都是没有buffer的channel，node.run()内部把相关的一些状态更新打包成Ready结构体(其中一种状态就是上面提到的msgs)放入readyc中。应用从readyc中pop出Ready中，对相应的状态进行处理，处理完成后，调用</p>
 
 <pre><code>rc.node.Advance()
-</code></pre>
+</code></pre></li>
+</ul>
 
 <p>往advancec中push一个空结构体告诉raft，已经对这批Ready包含的状态进行了相应的处理，node.run()内部从advancec中得到通知后，对内部一些状态进行处理，比如把已经持久化到storage中的entries从内存(对应type unstable struct)中删除等。</p>
 
 <ul>
 <li><p>tickc:应用定期往tickc中push空结构体，node.run()会调用tick()函数，对于leader来说，tick()会给其他peers发心跳，对于follower来说，会检查是否需要发起选主操作。</p></li>
 
-<li><p>confc/confstatec:应用从Ready中拿出CommittedEntries，检查其如果含有成员变更类型的日志，则需要调用</p></li>
-</ul>
+<li><p>confc/confstatec:应用从Ready中拿出CommittedEntries，检查其如果含有成员变更类型的日志，则需要调用</p>
 
 <pre><code>func (n *node) ApplyConfChange(cc pb.ConfChange) *pb.ConfState
-</code></pre>
+</code></pre></li>
+</ul>
 
 <p>这个函数会push ConfChange到confc中，confc同样是个无buffer的channel，node.run()内部会从confc中拿出ConfChange，然后进行真正的增减peers操作，之后将最新的成员组push到confstatec中，而ApplyConfChange函数从confstatec pop出最新的成员组返回给应用。</p>
 
@@ -442,15 +442,21 @@ n.ApplyConfChange(cc)
              <div class="row">
                 <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
                    <div id="disqus_thread"></div>
-<script>
-(function() { 
-    var d = document, s = d.createElement('script');
-    s.src = '//int64.disqus.com/embed.js';
-    s.setAttribute('data-timestamp', +new Date());
-    (d.head || d.body).appendChild(s);
-})();
+
+
+<script src="https://giscus.app/client.js"
+        data-repo="cwen0/int64.me"
+        data-repo-id="MDEwOlJlcG9zaXRvcnk3MTQ1NDYyNw=="
+        data-category="General"
+        data-category-id="DIC_kwDOBEJPo84CO9pv"
+        data-mapping="title"
+        data-reactions-enabled="false"
+        data-theme="light"
+        crossorigin="anonymous"
+        async>
 </script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<noscript>Please enable JavaScript to view the comments powered by giscus.</noscript>
+
 
                 </div>
             </div>
