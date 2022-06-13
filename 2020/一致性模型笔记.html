@@ -218,7 +218,8 @@
 +-------+--------+--------+--------+--------+
 | y(50) | 50     | 50     | 50     | 90     |
 +-------+--------+--------+--------+--------+
-``` 
+```    
+
 
 如上述示例中，初始状态 x=y=50, x+y=100, 然后 T1 写入了 x=10, 这个时候 T2 开始读取到 x=10, y=50, 这个时候 x+y=60, 打破了约束条件。
 
@@ -257,7 +258,8 @@ Phantom 现象描述： T1 读取满足一些&lt;搜索条件&gt;的一组数据
 | Employee Count | 3         | 3            | 4            | 4            |
 +&mdash;&mdash;&mdash;&mdash;&mdash;-+&mdash;&mdash;&mdash;&ndash;+&mdash;&mdash;&mdash;&mdash;&ndash;+&mdash;&mdash;&mdash;&mdash;&ndash;+&mdash;&mdash;&mdash;&mdash;&ndash;+</p>
 
-<pre><code>假设现在 T1 按照某个条件读取到了所有雇员 a，b，c，这时候 count 是 3，然后 T2 插入了一个新的雇员 d，同时更新了 count 为 4，但这时候 T1 在读取 count 的时候会得到 4，已经跟之前读取到的 a，b，c 冲突了。
+<pre><code>
+假设现在 T1 按照某个条件读取到了所有雇员 a，b，c，这时候 count 是 3，然后 T2 插入了一个新的雇员 d，同时更新了 count 为 4，但这时候 T1 在读取 count 的时候会得到 4，已经跟之前读取到的 a，b，c 冲突了。
 
 ### P4 - Lost Update 
 
