@@ -87,79 +87,50 @@
             </div>
             <div class="row">
                 <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-                    <p>以往编写单机程序的时候，如何来判断先后顺序，第一个想到的就是分配一个唯一时间戳，然后根据时间戳的大小来判断事件发生的先后顺序， 但是放在分布式系统就不一定有效&hellip;</p>
-
-<h2>逻辑时钟和物理时钟</h2>
-
+                    <p>以往编写单机程序的时候，如何来判断先后顺序，第一个想到的就是分配一个唯一时间戳，然后根据时间戳的大小来判断事件发生的先后顺序， 但是放在分布式系统就不一定有效...</p>
+<h2 id="heading">逻辑时钟和物理时钟</h2>
 <p>物理时间可以用严格的绝对时间来表示事件的发生顺序，但是在分布式的环境中，由于网络等因素无法做到完全的一致的时间，即使使用 NTP 时间，也是会有纳秒的误差。这样就导致在误差事件内发生的事件的先后顺序就很难判断了。</p>
-
 <p>1978 年，Leslie Lamport  在 <a href="http://amturing.acm.org/p558-lamport.pdf">Time, Clocks and the Ordering of Events in a Distributed System</a> 论文中提出了逻辑时钟的概念。在分布式环境中，通过一系列规则来定义逻辑时钟的变化。从而能通过逻辑时钟来对分布式系统中的事件的先后顺序进行判断。逻辑时钟本质上定义了一种 happen before 关系。</p>
-
-<h2>happen before 关系（偏序关系，部分有序）</h2>
-
+<h2 id="happen-before-">happen before 关系（偏序关系，部分有序）</h2>
 <p>在分布式系统中，一个进程 process 内的多个事件，自然地具备事件的先后顺序，或者说一个 process 本身就是一个有先验顺序的全序的事件集合。除了 process 内在的顺序，消息的发送和接收事件也是有因果序的。基于这两点，我们定义 happen-before 关系，写作 <code>-&gt;</code> 。</p>
-
-<h3><strong>定义</strong>: 是一个分布式系统中事件集合上满足如下条件的最小关系：</h3>
-
+<h3 id="-"><strong>定义</strong>: 是一个分布式系统中事件集合上满足如下条件的最小关系：</h3>
 <ol>
 <li>如果a和b是同一个process内的事件，且a在b之前发生，那么 <code>$$a-&gt;b</code>。</li>
 <li>如果a是一个process发送消息事件，b是另一个进程接收该消息的事件，那么<code>$$a-&gt;b</code>。</li>
-<li><code>$$∀a,b,c,a→b,b→c⟹a→c</code> (即“在……之前发生”的关系具备传递性（transitivity）)
-如果 <code>$$a↛b,b↛a</code>， 那么称 a 和 b 是并发（concurrent）的。
-根据定义，可以知道happen-before关系 <code>-&gt;</code> 是一个系统所有事件集合之上的反自反偏序关系。</li>
+<li><code>$$∀a,b,c,a→b,b→c⟹a→c</code> (即“在……之前发生”的关系具备传递性（transitivity）)<br>
+如果 <code>$$a↛b,b↛a</code>， 那么称 a 和 b 是并发（concurrent）的。<br>
+根据定义，可以知道happen-before关系 <code>-&gt; </code> 是一个系统所有事件集合之上的反自反偏序关系。</li>
 </ol>
-
-<h2>逻辑时钟</h2>
-
+<h2 id="heading-1">逻辑时钟</h2>
 <p><strong>定义</strong>：定义为一个以事件为输入，输出为某个有序数的函数C。若对所有事件恒满足：</p>
-
 <pre><code class="language-math">∀a,b\in E,a→b⟹C(a)&lt;C(b)
 </code></pre>
-
 <p>则称该函数C满足时钟约束。</p>
-
 <p>我们将C函数输出的有序数构成的先后关系，在逻辑上等同于物理时间，我们称由C实现的虚拟时钟为逻辑时钟。</p>
-
 <p><strong>实现</strong>: 满足如下两条规则：</p>
-
 <ol>
 <li>在同一进程内，C单调递增；</li>
-<li>如果事件 a 是由进程 Pi发送一个消息 m , 消息 m 包含一个时间戳 T(m) = Ci(a), 进程 Pj 收到一个消息 m，这时候 Pj 设置 Cj 一定大于或等于之的时间，但是一定要比T(m) 大 。
+<li>如果事件 a 是由进程 Pi发送一个消息 m , 消息 m 包含一个时间戳 T(m) = Ci(a), 进程 Pj 收到一个消息 m，这时候 Pj 设置 Cj 一定大于或等于之的时间，但是一定要比T(m) 大 。<br>
 函数 C 完全满足之前定义的偏序关系。</li>
 </ol>
-
-<h2>全序关系</h2>
-
+<h2 id="heading-2">全序关系</h2>
 <p>如果<code>$$C(a) = C(b)</code>，那a、b事件的顺序又是怎样的？假设a、b分别在节点P、Q上发生，Pi、Qj分别表示我们给P、Q的编号，如果 <code>$$C(a) = C(b)</code> 并且 Pi &lt; Qj，同样定义为a发生在b之前，记作 <code>$$a =&gt; b</code>。假如我们对下图的A、B、C分别编号<code>$$Ai = 1、Bj = 2、Ck = 3</code>，因 <code>$$C(B4) = C(C3)</code> 并且<code>$$Bj &lt; Ck</code>，则 <code>$$B4 =&gt; C3</code>。</p>
-
 <p>通过以上定义，我们可以对所有事件排序、获得事件的全序关系(total order)。</p>
-
-<p><img src="http://7xnp02.com1.z0.glb.clouddn.com/Screen%20Shot%202017-10-22%20at%205.35.32%20PM.png" alt="" /></p>
-
+<p><img src="http://7xnp02.com1.z0.glb.clouddn.com/Screen%20Shot%202017-10-22%20at%205.35.32%20PM.png" alt=""></p>
 <p><strong>结论</strong>：→ 关系确定了唯一的部分有序关系；而 ⇒ 则是人为指定的完全排序关系，根据指定规则不同，⇒</p>
-
 <p>关系可以有无穷多个。（在单一操作系统内的一个最简单的指定规则就是，当两事件时刻相等时，用进程号来分出前后）</p>
-
 <p><strong>fault model</strong>：该结论建立在信息有序到达和信息始终可达的基础上。前者要求一个可靠的传输协议，后者则注定了该模型过于理想化，使得现实的可靠实现不能直接建立在该结论之上。</p>
-
-<h2>强时钟约束</h2>
-
-<p>在上述方案中，时钟约束只定义了系统内部的有序性（或称同步性），由于 <code>$$⇒</code>
+<h2 id="heading-3">强时钟约束</h2>
+<p>在上述方案中，时钟约束只定义了系统内部的有序性（或称同步性），由于 <code>$$⇒</code><br>
 关系的任意性，系统内部的先后关系有可能和系统外部以真实时间为参考系的先后关系相互矛盾。为此，我们必须让系统也能模拟物理的时钟，从而将真实外部世界的先后顺序也考虑在内。处于系统外部的先后关系，我们定义为 (bold arrow, →→)。</p>
-
 <p><strong>定义</strong>：若对时钟函数C，满足：</p>
-
 <pre><code class="language-math">∀a,b\in E,a→→b⟹C(a)&lt;C(b)
 </code></pre>
-
 <p>则称函数满足强时钟约束。</p>
-
-<p>证明强时钟约束可保证时间上的先后关系略( 数学，有点看不懂，后面在细细研究
-<a href="http://blog.yangliu.online/2016/09/10/logic-clock-md">http://blog.yangliu.online/2016/09/10/logic-clock-md</a> )
+<p>证明强时钟约束可保证时间上的先后关系略( 数学，有点看不懂，后面在细细研究<br>
+<a href="http://blog.yangliu.online/2016/09/10/logic-clock-md">http://blog.yangliu.online/2016/09/10/logic-clock-md</a> )<br>
 分布式系统理论基础 - 时间、时钟和事件顺序</p>
-
-<h2>参考</h2>
-
+<h2 id="heading-4">参考</h2>
 <ol>
 <li><a href="http://amturing.acm.org/p558-lamport.pdf">Time, Clocks and the Ordering of Events in a Distributed System</a></li>
 <li><a href="http://blog.yangliu.online/2016/09/10/logic-clock-md/">分布式系统之逻辑时钟</a></li>

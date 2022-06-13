@@ -92,33 +92,21 @@
             <div class="row">
                 <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
                     <p>ljgo 是使用GO 语言实现的简单静态博客引擎, 编译速度快、安装简单。</p>
-
-<h4>目前版本 0.1.0-beta</h4>
-
-<h2>安装</h2>
-
-<h4>源码安装</h4>
-
+<h4 id="-010-beta">目前版本 0.1.0-beta</h4>
+<h2 id="heading">安装</h2>
+<h4 id="heading-1">源码安装</h4>
 <p>go运行环境安装请自行google</p>
-
 <pre><code>go get -u github.com/cwen-coder/ljgo
 make install
 </code></pre>
-
-<h4>直接下载编译好的可执行文件</h4>
-
+<h4 id="heading-2">直接下载编译好的可执行文件</h4>
 <p>下载地址 ： <a href="https://github.com/cwen-coder/ljgo/releases">ljgo</a></p>
-
-<h2>快速入门</h2>
-
-<h4>新建站点</h4>
-
+<h2 id="heading-3">快速入门</h2>
+<h4 id="heading-4">新建站点</h4>
 <pre><code>ljgo new example.com
 #执行完毕后，会在生成example.com文件夹
 </code></pre>
-
 <p><code>example.com</code> 文件夹目录结构</p>
-
 <pre><code>- config.yml    // 站点配置文件
 - source // 保存文章目录
 - - | - - about.md // 关于页面内容
@@ -127,9 +115,7 @@ make install
 - - | - - default // 站点默认主题
 
 </code></pre>
-
 <p><code>config.yml</code> 配置格式</p>
-
 <pre><code>site:
     title: 网站标题
     introduce: 网站描述
@@ -147,11 +133,8 @@ publish:
     cmd: |
         ljgo publish 命令将会执行的脚本
 </code></pre>
-
 <p>创建文章</p>
-
 <p>在source目录中建立任意.md文件（可置于子文件夹），使用如下格式：</p>
-
 <pre><code>title: 文章标题
 author: 文章作者
 date: 2016-08-02
@@ -168,65 +151,43 @@ tags:
 (文章的全部内容＝预览＋其他)
 
 </code></pre>
-
-<h4>生成静态页面</h4>
-
+<h4 id="heading-5">生成静态页面</h4>
 <pre><code>ljgo build
 # 执行完毕在站点文件下生成public文件夹，包含所有静态文件
 </code></pre>
-
-<dl>
-<dt>在站点文件夹中直接执行 <code>ljgo build</code> ， 或是在站点文件夹外执行但是得指定站点路径 eg</dt>
-<dd><code>ljgo build example.com</code>
-<code>ljgo serve</code> <code>ljgo publis</code> 都是同样的使用姿势</dd>
-</dl>
-
-<h4>本地预览</h4>
-
+<p>在站点文件夹中直接执行 <code>ljgo build</code> ， 或是在站点文件夹外执行但是得指定站点路径 eg<br>
+: <code>ljgo build example.com</code><br>
+<code>ljgo serve</code> <code>ljgo publis</code> 都是同样的使用姿势</p>
+<h4 id="heading-6">本地预览</h4>
 <pre><code>ligo serve
 # 打来浏览器, 访问你在站点配置中填入的端口地址
 # 默认是 http://localhost:3000
 </code></pre>
-
 <p>当然你也可以直接将 <code>ljgo serve</code> 运行在 <code>vps</code> 上</p>
-
-<h4>部署</h4>
-
+<h4 id="heading-7">部署</h4>
 <p>你可以使用 <a href="https://pages.github.com/">github pages</a> 等服务，或者放到你的自己的vps下，因为是纯静态文件,不需要php/mysql/java等环境的支持</p>
-
 <pre><code>ljgo publish
 # 执行站点配置中填写的发布脚本
 </code></pre>
-
 <p>eg : 使用 <code>github</code>服务， 初始化好 <code>public</code>  文件夹后，我们只需要在 <code>config.yml</code> 文件中的填写如下内容：</p>
-
 <pre><code>publish:
     cmd: |
         git add -A
         git commit -m &quot;update&quot;
         git push origin
 </code></pre>
-
 <p>这样我们在每次编辑完博客后直接运行 <code>ljgo publish</code> 就一切ok</p>
-
-<h2>关于主题</h2>
-
-<p>由于自己比较懒，目前的默认主题是从 <a href="https://startbootstrap.com">start bootstrapt</a> 中的 <a href="https://startbootstrap.com/template-overviews/clean-blog/">clean-blog</a> 修改而来
+<h2 id="heading-8">关于主题</h2>
+<p>由于自己比较懒，目前的默认主题是从 <a href="https://startbootstrap.com">start bootstrapt</a> 中的 <a href="https://startbootstrap.com/template-overviews/clean-blog/">clean-blog</a> 修改而来<br>
 当导入其他主题，需要把主题文件夹复制到 <code>example.com/themes/</code> 文件夹下，并修改站点配置 <code>config.yml</code> 中主题路径</p>
-
-<h4>十分欢迎大家贡献第三方主题 👏</h4>
-
-<h2>正在使用</h2>
-
+<h4 id="-">十分欢迎大家贡献第三方主题 👏</h4>
+<h2 id="heading-9">正在使用</h2>
 <ul>
-<li><a href="http://www.cwen.pw">cwen&rsquo;s blog</a>           - me</li>
+<li><a href="http://www.cwen.pw">cwen's blog</a>           - me</li>
 </ul>
-
 <p>期待更多的用户</p>
-
-<h2>反馈贡献</h2>
-
-<p>非常欢迎任何人的任何贡献。如有问题可报告至 <a href="https://github.com/cwen-coder/ljgo/issues">https://github.com/cwen-coder/ljgo/issues</a>。
+<h2 id="heading-10">反馈贡献</h2>
+<p>非常欢迎任何人的任何贡献。如有问题可报告至 <a href="https://github.com/cwen-coder/ljgo/issues">https://github.com/cwen-coder/ljgo/issues</a>。<br>
 或是直接发邮件To me <a href="mailto:yincwengo@gmail.com">yincwengo@gmail.com</a></p>
 
                 </div>

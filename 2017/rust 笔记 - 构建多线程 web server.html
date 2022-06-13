@@ -91,10 +91,8 @@
             </div>
             <div class="row">
                 <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-                    <p>入坑 rust， 学习如何来用 rust 构建多线程 web server&hellip;</p>
-
-<h2>先看结构</h2>
-
+                    <p>入坑 rust， 学习如何来用 rust 构建多线程 web server...</p>
+<h2 id="heading">先看结构</h2>
 <pre><code class="language-rust">## main.rs
 extern crate hello;
 use hello::ThreadPool;
@@ -156,22 +154,16 @@ fn handle_connection(mut stream: TcpStream) {
 }
 
 </code></pre>
-
-<p>从代码可以看出，使用 rust 构建一个 web server 并不难。 从头一点点学习
+<p>从代码可以看出，使用 rust 构建一个 web server 并不难。 从头一点点学习<br>
 其他语言一样，要监听 TCP 端口，rust 使用 <code>TcpListener</code> 中 <code>bind</code> 函数绑定监听地址，<code>bind</code> 函数返回 <code>Result&lt;T, E&gt;</code>, 绑定可能会失败，例如，如果不是管理员尝试连接 80 端口。另一个绑定会失败的情况是两个程序监听相同的端口，这可能发生于运行两个本程序的实例时。<code>unwrap</code> 取出 <code>T</code>， 如果出现错误直接 <code>panic</code>。</p>
-
 <pre><code>let pool = ThreadPool::new(4);
 </code></pre>
-
 <p>从字母意思可以看出来， 这是创建一个线程池（自己实现的，后面会详细介绍如何实现这个线程池）。</p>
-
 <pre><code>for stream in listener.incoming() {
    let stream = stream.unwrap();
 }
 </code></pre>
-
 <p><code>TcpListener</code> 的 <code>incoming</code> 方法返回一个迭代器，它提供了一系列的流（更准确的说是 <code>TcpStream</code> 类型的流）。流（<code>stream</code>）代表一个客户端和服务端之间打开的连接。为此，<code>TcpStream</code> 允许我们读取它来查看客户端发送了什么，并可以编写响应。所以这个 for 循环会依次处理每个连接并产生一系列的流供我们处理。</p>
-
 <pre><code>fn handle_connection(mut stream: TcpStream) {
     let mut buffer = [0;512];
     stream.read(&amp;mut buffer).unwrap();
@@ -189,16 +181,11 @@ fn handle_connection(mut stream: TcpStream) {
     stream.flush().unwrap();
 }
 </code></pre>
-
 <p><code>handle_connection</code> 负责处理请求和响应，在 <code>handle_connection</code> 中，通过 <code>mut</code> 关键字将 <code>stream</code> 参数变为可变。我们将从流中读取数据，所以它需要是可修改的。</p>
-
-<p>接下来，需要实际读取流。这里分两步进行：首先，在栈上声明一个 <code>buffer</code> 来存放读取到的数据。这里创建了一个 512 字节的缓冲区，它足以存放基本请求的数据。这对于本章的目的来说是足够的。如果希望处理任意大小的请求，管理所需的缓冲区将更复杂，不过现在一切从简。接着将缓冲区传递给 <code>stream.read</code> ，它会从 <code>TcpStream</code>中读取字节并放入缓冲区中。
-接下来就是进行路由判断，当然这里是最简单判断，如果请求是 &ldquo;/&rdquo; 将返回 hello.html 页面否则返回 &ldquo;404.html&rdquo;。</p>
-
-<h2>实现线程池</h2>
-
+<p>接下来，需要实际读取流。这里分两步进行：首先，在栈上声明一个 <code>buffer</code> 来存放读取到的数据。这里创建了一个 512 字节的缓冲区，它足以存放基本请求的数据。这对于本章的目的来说是足够的。如果希望处理任意大小的请求，管理所需的缓冲区将更复杂，不过现在一切从简。接着将缓冲区传递给 <code>stream.read</code> ，它会从 <code>TcpStream </code>中读取字节并放入缓冲区中。<br>
+接下来就是进行路由判断，当然这里是最简单判断，如果请求是 &quot;/&quot; 将返回 hello.html 页面否则返回 &quot;404.html&quot;。</p>
+<h2 id="heading-1">实现线程池</h2>
 <p>先看肿么用</p>
-
 <pre><code>let pool = ThreadPool::new(4);
 
     let mut counter = 0;
@@ -211,19 +198,14 @@ fn handle_connection(mut stream: TcpStream) {
         });
     }
 </code></pre>
-
 <p>首先使用  <code>new</code> 创建一个大小为 4 的连接池， 并且调用  <code>execute</code> 方法，<code>execute</code> 方法的参数可以看出来传入的是一个闭包，并且这个线程只会执行闭包一次。所以判断 execute 参数具有 <code>FnOnce trait bound</code>, 同时可以从 <code>thread::spawn</code> 函数的实现推断出。</p>
-
 <pre><code> pub fn spawn&lt;F, T&gt;(f: F) -&gt; JoinHandle&lt;T&gt;
     where
         F: FnOnce() -&gt; T + Send + 'static,
         T: Send + 'static
 </code></pre>
-
 <p>所有我没制动，我的线程池 lib 需有有 <code>ThreadPool</code> 这个 struct 并且，需要绑定  <code>new</code> <code>execute</code> 函数。</p>
-
 <p>// lib.rs 基本</p>
-
 <pre><code>pub struct ThreadPool;
 
 impl ThreadPool {
@@ -238,16 +220,11 @@ impl ThreadPool {
     }
 }
 </code></pre>
-
 <p>F 是这里我们关心的参数；T 与返回值有关所以我们并不关心。考虑到 <code>spawn</code> 使用 <code>FnOnce</code> 作为 F 的 <code>trait bound</code>，这可能也是我们需要的，因为最终会将传递给 <code>execute</code> 的参数传给 <code>spawn</code>。因为处理请求的线程只会执行闭包一次，这也进一步确认了 <code>FnOnce</code> 是我们需要的 <code>trait</code>。</p>
-
-<p>F 还有 <code>trait bound Send</code>和生命周期绑定 <code>'static</code>，这对我们的情况也是有意义的：需要 Send 来将闭包从一个线程转移到另一个线程，而 <code>'static</code> 是因为并不知道线程会执行多久。
+<p>F 还有 <code>trait bound Send </code>和生命周期绑定 <code>'static</code>，这对我们的情况也是有意义的：需要 Send 来将闭包从一个线程转移到另一个线程，而 <code>'static</code> 是因为并不知道线程会执行多久。<br>
 <code>FnOnce trait</code> 仍然需要之后的 ()，因为这里的 <code>FnOnce</code> 代表一个没有参数也没有返回值的闭包。正如函数的定义，返回值类型可以从签名中省略，不过即便没有参数也需要括号。</p>
-
 <p>显然这不是一个完整连接池，没法提供服务。 我们接续补全。 结下来我们要做的是要储存它们，显然就是储存事先创建的线程。</p>
-
-<p>我们定义一个 <code>Worker struct</code> , <code>ThreadPool</code> 里面定义一个存放 size 个元素的 vector</p>
-
+<p>我们定义一个 <code> Worker struct</code> , <code>ThreadPool</code> 里面定义一个存放 size 个元素的 vector</p>
 <pre><code>pub struct ThreadPool {
     workers: Vec&lt;Worker&gt;,
 }
@@ -257,9 +234,7 @@ struct Worker {
     thread: thread::JoinHandle&lt;()&gt;,
 }
 </code></pre>
-
 <p>接下来给 <code>Worker</code> 添加一个 new 函数</p>
-
 <pre><code>impl Worker {
     fn new(id: usize) -&gt; Worker {
         let thread = thread::spawn(|| {});
@@ -271,15 +246,13 @@ struct Worker {
     }
 }
 </code></pre>
-
-<p>在接下来就是考虑如何通信的问题，如何让 ThreodPool 接受到请求然后让worker 去执行，首先想到的就是使用通道了，搞个生产者，消费者了。
-接下来我们要做什么
-    1. ThreadPool 会创建一个通道并充当发送端。
-    2. 每个 Worker 将会充当通道的接收端。
-    3. 新建一个 Job 结构体来存放用于向通道中发送的闭包。
-    4. ThreadPool 的 execute 方法会在发送端发出期望执行的任务。
-    5. 在线程中，Worker 会遍历通道的接收端并执行任何接收到的任务。</p>
-
+<p>在接下来就是考虑如何通信的问题，如何让 ThreodPool 接受到请求然后让worker 去执行，首先想到的就是使用通道了，搞个生产者，消费者了。<br>
+接下来我们要做什么<br>
+1. ThreadPool 会创建一个通道并充当发送端。<br>
+2. 每个 Worker 将会充当通道的接收端。<br>
+3. 新建一个 Job 结构体来存放用于向通道中发送的闭包。<br>
+4. ThreadPool 的 execute 方法会在发送端发出期望执行的任务。<br>
+5. 在线程中，Worker 会遍历通道的接收端并执行任何接收到的任务。</p>
 <pre><code>// ...snip...
 use std::sync::mpsc;
 
@@ -324,21 +297,13 @@ impl Worker {
     }
 }
 </code></pre>
-
 <p><code>ThreadPool</code> 来储存一个发送 Job 实例的通道发送端</p>
-
 <p>在 <code>ThreadPool::new</code> 中，新建了一个通道，并接着让线程池在接收端等待。这段代码能够编译，不过仍有警告。</p>
-
 <p>在线程池创建每个 worker 时将通道的接收端传递给他们。须知我们希望在 <code>worker</code> 所分配的线程中使用通道的接收端，所以将在闭包中引用 <code>receiver</code> 参数。</p>
-
 <p>显然上边的消费者是有问题。 Rust 所提供的通道实现是多生产者，单消费者的，所以不能简单的克隆通道的消费端来解决问题。即便可以我们也不希望克隆消费端；在所有的<code>worker</code> 中共享单一 <code>receiver</code> 才是我们希望的在线程间分发任务的机制。</p>
-
 <p>另外，从通道队列中取出任务涉及到修改 <code>receiver</code>，所以这些线程需要一个能安全的共享和修改 <code>receiver</code> 的方式。如果修改不是线程安全的，则可能遇到竞争状态，例如两个线程因同时在队列中取出相同的任务并执行了相同的工作。</p>
-
 <p>我们可以使用线程安全智能指针，为了在多个线程间共享所有权并允许线程修改其值，需要使用 <code>Arc&lt;Mutex&lt;T&gt;&gt;</code>。<code>Arc</code> 使得多个 <code>worker</code> 拥有接收端，而 <code>Mutex</code> 则确保一次只有一个 <code>worker</code> 能从接收端得到任务。</p>
-
 <p>so 我的代码就改成这样了</p>
-
 <pre><code> use std::sync::Arc;
 use std::sync::Mutex;
 
@@ -373,9 +338,7 @@ impl Worker {
 }
 
 </code></pre>
-
 <p>让我们实现 <code>ThreadPool</code> 上的 <code>execute</code> 方法。同时也要修改 <code>Job</code> 结构体：它将不再是结构体，<code>Job</code> 将是一个有着 <code>execute</code> 接收到的闭包类型的 <code>trait</code> 对象的类型别名。在 worker 中，传递给 <code>thread::spawn</code> 的闭包仍然还只是引用了通道的接收端。但是我们需要闭包一直循环，向通道的接收端请求任务，并在得到任务时执行他们。</p>
-
 <pre><code>
 type Job = Box&lt;FnOnce() + Send + 'static&gt;;
 
@@ -412,9 +375,7 @@ impl Worker {
     }
 }
 </code></pre>
-
 <p>如果现在编译我们的代码，还是会出现错误</p>
-
 <pre><code>error[E0161]: cannot move a value of type std::ops::FnOnce() +
 std::marker::Send: the size of std::ops::FnOnce() + std::marker::Send cannot be
 statically determined
@@ -423,13 +384,9 @@ statically determined
 63 |                 (*job)();
    |                 ^^^^^^
 </code></pre>
-
-<p>为了调用储存在 <code>Box&lt;T&gt;</code>（这正是 Job 别名的类型）中的 <code>FnOnce</code> 闭包，该闭包需要能将自己移动出 <code>Box&lt;T&gt;</code>，因为当调用这个闭包时，它获取 <code>self</code> 的所有权。通常来说，将值移动出 <code>Box&lt;T&gt;</code> 是不被允许的，因为 Rust 不知道 <code>Box&lt;T&gt;</code> 中的值将会有多大。</p>
-
-<p>我们可以使用 <code>self: Box&lt;Self&gt;</code>语法的方法，获取了储存在 <code>Box&lt;T&gt;</code> 中的 <code>Self</code> 值的所有权。这正是我们希望做的，然而不幸的是 Rust 调用闭包的那部分实现并没有使用 <code>self: Box&lt;Self&gt;</code>。所以这里 Rust 也不知道它可以使用 <code>self: Box&lt;Self&gt;</code> 来获取闭包的所有权并将闭包移动出 <code>Box&lt;T&gt;</code>。</p>
-
-<p>不过目前让我们绕过这个问题。所幸有一个技巧可以显式的告诉 Rust 我们处于可以获取使用 <code>self: Box&lt;Self&gt;</code> 的 <code>Box&lt;T&gt;</code> 中值的所有权的状态，而一旦获取了闭包的所有权就可以调用它了。这涉及到定义一个新 <code>trait</code>，它带有一个在签名中使用 <code>self: Box&lt;Self&gt;</code> 的方法 <code>call_box</code>，为任何实现了 <code>FnOnce()</code>的类型定义这个 <code>trait</code>，修改类型别名来使用这个新 <code>trait</code>，并修改 <code>Worker</code> 使用 <code>call_box</code> 方法</p>
-
+<p>为了调用储存在 <code>Box&lt;T&gt; </code>（这正是 Job 别名的类型）中的 <code>FnOnce</code> 闭包，该闭包需要能将自己移动出 <code>Box&lt;T&gt;</code>，因为当调用这个闭包时，它获取 <code>self</code> 的所有权。通常来说，将值移动出 <code>Box&lt;T&gt;</code> 是不被允许的，因为 Rust 不知道 <code>Box&lt;T&gt;</code> 中的值将会有多大。</p>
+<p>我们可以使用 <code>self: Box&lt;Self&gt; </code>语法的方法，获取了储存在 <code>Box&lt;T&gt;</code> 中的 <code>Self</code> 值的所有权。这正是我们希望做的，然而不幸的是 Rust 调用闭包的那部分实现并没有使用 <code>self: Box&lt;Self&gt;</code>。所以这里 Rust 也不知道它可以使用 <code>self: Box&lt;Self&gt;</code> 来获取闭包的所有权并将闭包移动出 <code>Box&lt;T&gt;</code>。</p>
+<p>不过目前让我们绕过这个问题。所幸有一个技巧可以显式的告诉 Rust 我们处于可以获取使用 <code>self: Box&lt;Self&gt;</code> 的 <code>Box&lt;T&gt;</code> 中值的所有权的状态，而一旦获取了闭包的所有权就可以调用它了。这涉及到定义一个新 <code>trait</code>，它带有一个在签名中使用 <code>self: Box&lt;Self&gt;</code> 的方法 <code>call_box</code>，为任何实现了 <code>FnOnce() </code>的类型定义这个 <code>trait</code>，修改类型别名来使用这个新 <code>trait</code>，并修改 <code>Worker</code> 使用 <code>call_box</code> 方法</p>
 <pre><code>trait FnBox {
     fn call_box(self: Box&lt;Self&gt;);
 }
@@ -463,11 +420,8 @@ impl Worker {
     }
 }
 </code></pre>
-
-<h2>Graceful Shutdown 与清理</h2>
-
+<h2 id="graceful-shutdown-">Graceful Shutdown 与清理</h2>
 <p>如果我们编译上述表示的代码，会有一些警告说存在一些字段并没有直接被使用，这提醒了我们并没有清理任何内容。当使用 <code>ctrl-C</code> 终止主线程，所有其他线程也会立刻停止，即便他们正在处理一个请求。现在我们要为 <code>ThreadPool</code> 实现 <code>Drop trait</code> 对线程池中的每一个线程调用 <code>join</code>，这样这些线程将会执行完他们的请求。接着会为 <code>ThreadPool</code> 实现一个方法来告诉线程他们应该停止接收新请求并结束。为了实践这些代码，修改 <code>server</code> 在 <code>graceful Shutdown</code> 之前只接受两个请求。</p>
-
 <pre><code>enum Message {
     NewJob(Job),
     Terminate,
@@ -532,11 +486,8 @@ impl Worker {
     }
 }
 </code></pre>
-
 <p>收发 <code>Message</code> 值并在 Worker 收到 <code>Message::Terminate</code> 时退出循环</p>
-
 <p>需要将 <code>ThreadPool</code> 定义、创建通道的 <code>ThreadPool::new</code> 和 <code>Worker::new</code> 签名中的 <code>Job</code> 改为 <code>Message</code>。<code>ThreadPool</code> 的 <code>execute</code> 方法需要发送封装进 <code>Message::NewJob</code> 成员的任务，当获取到 <code>NewJob</code> 时会处理任务而收到 <code>Terminate</code> 成员时则会退出循环。</p>
-
 <pre><code>impl Drop for ThreadPool {
     fn drop(&amp;mut self) {
         println!(&quot;Sending terminate message to all workers.&quot;);
@@ -557,17 +508,11 @@ impl Worker {
     }
 }
 </code></pre>
-
 <p>在对每个 <code>worker</code> 线程调用 <code>join</code> 之前向 <code>worker</code> 发送 <code>Message::Terminate</code></p>
-
-<p>现在遍历了 <code>worker</code> 两次，一次向每个 <code>worker</code> 发送一个 <code>Terminate</code> 消息，一个调用每个 <code>worker</code> 线程上的 <code>join</code>。如果尝试在同一循环中发送消息并立即 <code>join</code> 线程，则无法保证当前迭代的 <code>worker</code> 是从通道收到终止消息的<code>worker</code>。</p>
-
+<p>现在遍历了 <code>worker</code> 两次，一次向每个 <code>worker</code> 发送一个 <code>Terminate</code> 消息，一个调用每个 <code>worker</code> 线程上的 <code>join</code>。如果尝试在同一循环中发送消息并立即 <code>join</code> 线程，则无法保证当前迭代的 <code>worker</code> 是从通道收到终止消息的<code> worker</code>。</p>
 <p>为了更好的理解为什么需要两个分开的循环，想象一下只有两个 <code>worker</code> 的场景。如果在一个循环中遍历每个<code>worker</code>，在第一次迭代中 <code>worker</code> 是第一个 <code>worker</code>，我们向通道发出终止消息并对第一个 <code>worker</code> 线程调用 <code>join</code>。如果第一个 <code>worker</code> 当时正忙于处理请求，则第二个 <code>worker</code> 会从通道接收这个终止消息并结束。而我们在等待第一个 <code>worker</code> 结束，不过它永远也不会结束因为第二个线程取走了终止消息。现在我们就阻塞在了等待第一个 <code>worker</code> 结束，而无法发出第二条终止消息。死锁！</p>
-
 <p>为了避免此情况，首先从通道中取出所有的 <code>Terminate</code> 消息，接着 <code>join</code> 所有的线程。因为每个 <code>worker</code> 一旦收到终止消息即会停止从通道接收消息，我们就可以确保如果发送同 <code>worker</code> 数相同的终止消息，在 <code>join</code> 之前每个线程都会收到一个终止消息。</p>
-
-<h4>简易线程池完整代码</h4>
-
+<h4 id="heading-2">简易线程池完整代码</h4>
 <pre><code>// lib.rs
 use std::thread;
 use std::sync::mpsc;
@@ -685,9 +630,7 @@ impl Worker {
     }
 }
 </code></pre>
-
-<h2>参考</h2>
-
+<h2 id="heading-3">参考</h2>
 <ol>
 <li><a href="https://doc.rust-lang.org/book/second-edition/ch20-00-final-project-a-web-server.html">The Rust Programming Language</a></li>
 <li><a href="https://kaisery.github.io/trpl-zh-cn/">Rust程序设计-中文版</a></li>

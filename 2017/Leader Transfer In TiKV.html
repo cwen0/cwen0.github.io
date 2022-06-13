@@ -97,26 +97,18 @@
             </div>
             <div class="row">
                 <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-                    <p>在 TiKV 中，PD 当发现 TiKV 实例上 region 出现 leader 不均匀的时候，会尝试将 leader 从数量比较多的地方 transfer 到其地方，具体调度指令由 PD 发出，TiKV 接收到 PD 的 transfer leader 指令，调用 raft 操作执行真正操作&hellip;</p>
-
-<h2>先看 PD</h2>
-
+                    <p>在 TiKV 中，PD 当发现 TiKV 实例上 region 出现 leader 不均匀的时候，会尝试将 leader 从数量比较多的地方 transfer 到其地方，具体调度指令由 PD 发出，TiKV 接收到 PD 的 transfer leader 指令，调用 raft 操作执行真正操作...</p>
+<h2 id="-pd">先看 PD</h2>
 <p>PD（Placement Driver）在 TiDB 集群里面主要负责 meta 信息存储，以及管理和调度 TiKV 集群， 所有可以想象 Transfer Leader 的命令显然是有 PD 发送到 TiKV。</p>
-
 <p>PD 给 TiKV 发送 Transfer Leader 命令，可以分为一下两类</p>
-
 <ul>
 <li>人为干预调度</li>
 </ul>
-
 <p>PD 提供 pd-ctl 命令行工具，或是通过 api 接口显示的将一个 region 的 leader 调度到某一个 store 上。</p>
-
 <pre><code>&gt;&gt; operator add transfer-leader 1 2         // 把 region 1 的 leader 调度到 store 2
 &gt;&gt; operator add transfer-region 1 2 3 4     // 把 region 1 调度到 store 2,3,4
 </code></pre>
-
 <p>pd-ctl 实际上也是请求 PD 的api，具体请求过程略，有兴趣的同学可以去研究一下 PD 的源码。</p>
-
 <pre><code>// pd/server/coordinator.go
 func (c *coordinator) sendScheduleCommand(region *core.RegionInfo, step schedule.OperatorStep) {
         log.Infof(&quot;[region %v] send schedule command: %s&quot;, region.GetId(), step)
@@ -131,15 +123,11 @@ func (c *coordinator) sendScheduleCommand(region *core.RegionInfo, step schedule
 }
 
 </code></pre>
-
 <p>从上边代码可以看到，其实 PD 的调度命令是通过 heartbeat 来进行传递的，PD 和 TiKV 之间是通过 grpc 通信，当收到到这个操作指令的时候，就会调用 grpc 的send 方法，将请求发送给 TiKV。</p>
-
 <ul>
 <li>Leader 分布不均匀或是热点过于集中，PD 自身调度</li>
 </ul>
-
-<p>PD 的主要作用就是负责管理和调度 TiKV， 如果 TiKV 各个节点上出现了 leader 分布补均匀或是热点 leader 过于集中在某一个 TiKV 节点上的时候，这时候 PD 就会作出干预，进行 transfer leader 等操作。PD 是根据每个 store 或是 leader peer 发送过来的心跳包，来作统计并决定执行哪些操作，每次收到 Region Leader 发来的心跳包时，PD 都会检查是否有对这个 Region 待进行的操作，通过心跳包的回复消息，将需要进行的操作返回给 Region Leader，并在后面的心跳包中监测执行结果。注意这里的操作只是给 Region Leader 的建议，并不保证一定能得到执行，具体是否会执行以及什么时候执行，由 Region Leader 自己根据当前自身状态来定。（后面两句话直接 copy 自 <a href="https://pingcap.com/blog-tidb-internal-3-zh）。">https://pingcap.com/blog-tidb-internal-3-zh）。</a></p>
-
+<p>PD 的主要作用就是负责管理和调度 TiKV， 如果 TiKV 各个节点上出现了 leader 分布补均匀或是热点 leader 过于集中在某一个 TiKV 节点上的时候，这时候 PD 就会作出干预，进行 transfer leader 等操作。PD 是根据每个 store 或是 leader peer 发送过来的心跳包，来作统计并决定执行哪些操作，每次收到 Region Leader 发来的心跳包时，PD 都会检查是否有对这个 Region 待进行的操作，通过心跳包的回复消息，将需要进行的操作返回给 Region Leader，并在后面的心跳包中监测执行结果。注意这里的操作只是给 Region Leader 的建议，并不保证一定能得到执行，具体是否会执行以及什么时候执行，由 Region Leader 自己根据当前自身状态来定。（后面两句话直接 copy 自 <a href="https://pingcap.com/blog-tidb-internal-3-zh">https://pingcap.com/blog-tidb-internal-3-zh</a>）。</p>
 <pre><code>// HandleRegionHeartbeat processes RegionInfo reports from client.
 func (c *RaftCluster) HandleRegionHeartbeat(region *core.RegionInfo) error {
         if err := c.cachedCluster.handleRegionHeartbeat(region); err != nil {
@@ -156,9 +144,7 @@ func (c *RaftCluster) HandleRegionHeartbeat(region *core.RegionInfo) error {
         return nil
 }
 </code></pre>
-
-<p>这个函数处理来自 leader peer 的heartbeat， <code>handleRegionHeartbeat</code> 主要负责更相关region 的信息， 我们主要还是关系 如何发送操作指令，想当然就是 <code>c.coordinator.dispatch(region)</code> 这个函数干的事情了。</p>
-
+<p>这个函数处理来自 leader peer 的heartbeat， <code>handleRegionHeartbeat</code> 主要负责更相关region 的信息， 我们主要还是关系 如何发送操作指令，想当然就是 <code>c.coordinator.dispatch(region) </code> 这个函数干的事情了。</p>
 <pre><code>func (c *coordinator) dispatch(region *core.RegionInfo) {
        // Check existed operator.
        if op := c.getOperator(region.GetId()); op != nil {
@@ -181,12 +167,9 @@ func (c *RaftCluster) HandleRegionHeartbeat(region *core.RegionInfo) error {
     ....
 }
 </code></pre>
-
-<p>可以看到这个函数，先检查是否存在已有的操作，这个 operator 可以有好多种，比如 <code>AddReplica、RemoveReplica、TransferLeader</code>,
+<p>可以看到这个函数，先检查是否存在已有的操作，这个 operator 可以有好多种，比如 <code>AddReplica、RemoveReplica、TransferLeader</code>,<br>
 如果存在检查这个操作显示是到哪一步了，如果是没有结束并且没有超时，就会使用 <code>sendScheduleCommand</code> 通过 grpc 向这个region 在此发送此次操作。 要是以及完成或是超时分别错处响应的处理并删除这个操作。</p>
-
 <p>在看 PD 如何将 Transfer leader 这个 opertor 加到 <code>c.operators</code> 里面的</p>
-
 <pre><code>func (l *balanceLeaderScheduler) Schedule(cluster schedule.Cluster) *schedule.Operator {
         schedulerCounter.WithLabelValues(l.GetName(), &quot;schedule&quot;).Inc()
         region, newLeader := scheduleTransferLeader(cluster, l.GetName(), l.selector)
@@ -239,15 +222,10 @@ func (c *coordinator) runScheduler(s *scheduleController) {
 }
 
 </code></pre>
-
-<p>可以看到<code>Schedule</code>这个函数最后返回的是一个 <code>operator</code> , <code>runScheduler</code> 调用 <code>c.addOperator</code> 将这个<code>operator</code> 加到<code>c.operators</code></p>
-
-<h2>在看 TiKV</h2>
-
+<p>可以看到<code>Schedule</code>这个函数最后返回的是一个 <code>operator</code> , <code>runScheduler</code> 调用 <code> c.addOperator</code> 将这个<code>operator</code> 加到<code>c.operators</code></p>
+<h2 id="-tikv">在看 TiKV</h2>
 <p>接着看 TiKV 从 PD 收到 transfer leader 指令后会做哪些操作。(刚入坑 Rust，看 TiKV 还有点费劲，可能有些地方理解的有问题，还望指出来)</p>
-
 <p>TiKV 首先是要接受到 PD 发送的命令，来看一个函数，这个函数是用来处理 PD 发送的命令</p>
-
 <pre><code>fn schedule_heartbeat_receiver(&amp;mut self, handle: &amp;Handle) {
         let ch = self.ch.clone();
         let store_id = self.store_id;
@@ -280,11 +258,8 @@ func (c *coordinator) runScheduler(s *scheduleController) {
     // more
 }
 </code></pre>
-
 <p>这段代码很好理解，就是先从 resp 中读取到 <code>region_id</code>、<code>peer</code>，然后在判断要执行的操作是什么，当执行的操作是 <code>transfer_leader</code>的时候，先是更新一下监控，然后在从 resp 中获取到 <code>leader</code> 该 <code>transfer</code> 到什么地方, 在然后呢，就是发送这个命令去执行了。</p>
-
 <p>先看启动 启动 <code>transfer_leader</code> 函数</p>
-
 <pre><code>pub fn transfer_leader(&amp;mut self, transferee: u64) {
      let mut m = Message::new();
      m.set_msg_type(MessageType::MsgTransferLeader);
@@ -292,11 +267,8 @@ func (c *coordinator) runScheduler(s *scheduleController) {
      self.raft.step(m).is_ok();
  }
 </code></pre>
-
 <p>这个函数其实很简单，先设置一下消息类型，然后获取到目标 <code>leader</code>，<code>transferee</code> 就是目标<code>leader</code>，当然自己就是当前 <code>leader</code>。</p>
-
 <p>在看处理过程</p>
-
 <pre><code>fn handle_transfer_leader(&amp;mut self, m: &amp;Message) {
     let lead_transferee = m.get_from();
     let last_lead_transferee = self.lead_transferee;
@@ -352,22 +324,16 @@ func (c *coordinator) runScheduler(s *scheduleController) {
 }
 
 </code></pre>
-
-<p>这段代码稍有点长，我们可以一步一步的来看， 首先是进行一些检查，第一步是检查是否已经有 <code>transfer leader</code> 在执行，如果已经正在  <code>transfer leader</code> 并且目标 <code>leader</code> 相同的话，就退出这次操作，如果目标不同的话，那就 调用<code>self.abort_leader_transfer();</code> 这个函数放弃上一次正在执行的 <code>transfer leader</code>  操作。 紧接就是判断 目标 <code>leader</code>是不是自己，要是自己那就直接退出就好了，因为不需要<code>transfer leader</code>。</p>
-
+<p>这段代码稍有点长，我们可以一步一步的来看， 首先是进行一些检查，第一步是检查是否已经有 <code>transfer leader</code> 在执行，如果已经正在  <code>transfer leader</code> 并且目标 <code>leader</code> 相同的话，就退出这次操作，如果目标不同的话，那就 调用<code> self.abort_leader_transfer();</code> 这个函数放弃上一次正在执行的 <code>transfer leader</code>  操作。 紧接就是判断 目标 <code>leader</code>是不是自己，要是自己那就直接退出就好了，因为不需要<code>transfer leader</code>。</p>
 <p>下一步就是将目标leader保存在<code>leadTransferee</code>中，标示着有<code>transfer</code>正在进行，后续如果有请求<code>propose</code>进来，会检查这个<code>lead_transferee</code> 是不是存在，如果存在，其他操作就无法成功，也就是无法进行写操作。</p>
-
 <p>下一步就是检查 <code>transferee</code> 和<code>leader</code>的<code>log</code>是否一样新</p>
-
 <ul>
 <li>如果<code>log</code> 一致的话就会给<code>transferee</code>发送<code>MsgTimeoutNow</code>类型的消息，告诉<code>transferee</code>可以立即选主，不需要等到<code>election timeout</code>。</li>
 <li>如果 <code>log</code> 不一致，就会给 <code>lead_transferee</code>  发送一个<code>append</code> 的请求，追加 <code>log</code>。 ，leader在收到响应 <code>MsgAppResp</code>后,如果发现目前正处于<code>transfer leader</code> 过程中并且 <code>transferee</code>已经日志最新，则同样，给<code>transferee</code>发送<code>MsgTimeoutNow</code>。</li>
 </ul>
-
-<h2>参考</h2>
-
+<h2 id="heading">参考</h2>
 <ol>
-<li><a href="https://pingcap.com/集群调度/blog-placement-driver-zh">TiKV 源码解析系列 - Placement Driver</a></li>
+<li><a href="https://pingcap.com/%E9%9B%86%E7%BE%A4%E8%B0%83%E5%BA%A6/blog-placement-driver-zh">TiKV 源码解析系列 - Placement Driver</a></li>
 <li><a href="https://pingcap.com/blog-tidb-internal-3-zh">三篇文章了解 TiDB 技术内幕 - 谈调度</a></li>
 <li><a href="https://zhuanlan.zhihu.com/p/27895034">etcd raft如何实现leadership transfer</a></li>
 <li><a href="https://github.com/pingcap/pd">PD</a></li>

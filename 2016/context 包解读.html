@@ -94,17 +94,11 @@
             <div class="row">
                 <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
                     <p><code>context</code> 包困扰我好久，之前在  <code>watch etcd</code> 的时候首次上手使用这个包，当时并不理解这个包的作用，只知道可以用来关闭 <code>watch</code> ， 后来被大牛吐槽了，决定深入探究一番。</p>
-
-<h4>简介</h4>
-
+<h4 id="heading">简介</h4>
 <p><code>golang</code> 中的创建一个新的 <code>goroutine</code> , 并不会返回像c语言类似的pid，所有我们不能从外部杀死某个goroutine，所有我就得让它自己结束，之前我们用 <code>channel ＋ select</code> 的方式，来解决这个问题，但是有些场景实现起来比较麻烦，例如由一个请求衍生出的各个 <code>goroutine</code> 之间需要满足一定的约束关系，以实现一些诸如有效期，中止routine树，传递请求全局变量之类的功能。于是google 就为我们提供一个解决方案，开源了 <code>context</code> 包。使用 <code>context</code> 实现上下文功能约定需要在你的方法的传入参数的第一个传入一个 <code>context.Context</code> 类型的变量。</p>
-
-<h4>源码剖析</h4>
-
-<h6>context.Context 接口</h6>
-
+<h4 id="heading-1">源码剖析</h4>
+<h6 id="contextcontext-">context.Context 接口</h6>
 <p><code>context</code> 包的核心</p>
-
 <pre><code>//  context 包里的方法是线程安全的，可以被多个 goroutine 使用
 type Context interface {
     // 当Context 被 canceled 或是 times out 的时候，Done 返回一个被 closed 的channel
@@ -120,13 +114,9 @@ type Context interface {
     Value(key interface{}) interface{}
 }
 </code></pre>
-
 <p>我们不需要手动实现这个接口，<code>context</code> 包已经给我们提供了两个，一个是 <code>Background()</code>，一个是 <code>TODO()</code>，这两个函数都会返回一个 <code>Context</code> 的实例。只是返回的这两个实例都是空 <code>Context</code>。</p>
-
-<h6>主要结构</h6>
-
+<h6 id="heading-2">主要结构</h6>
 <p><code>cancelCtx</code> 结构体继承了 <code>Context</code> ，实现了 <code>canceler</code> 方法：</p>
-
 <pre><code>//*cancelCtx 和 *timerCtx 都实现了canceler接口，实现该接口的类型都可以被直接canceled
 type canceler interface {
     cancel(removeFromParent bool, err error)
@@ -182,44 +172,32 @@ func (c *cancelCtx) cancel(removeFromParent bool, err error) {
     }
 }
 </code></pre>
-
 <p><code>timerCtx</code> 结构继承 <code>cancelCtx</code></p>
-
 <pre><code>type timerCtx struct {
     cancelCtx //此处的封装为了继承来自于cancelCtx的方法，cancelCtx.Context才是父亲节点的指针
     timer *time.Timer // Under cancelCtx.mu. 是一个计时器
     deadline time.Time
 }
 </code></pre>
-
 <p><code>valueCtx</code> 结构继承 <code>cancelCtx</code></p>
-
 <pre><code>type valueCtx struct {
     Context
     key, val interface{}
 }
 </code></pre>
-
-<h6>主要方法</h6>
-
+<h6 id="heading-3">主要方法</h6>
 <pre><code>func WithCancel(parent Context) (ctx Context, cancel CancelFunc)
 func WithDeadline(parent Context, deadline time.Time) (Context, CancelFunc)
 func WithTimeout(parent Context, timeout time.Duration) (Context, CancelFunc)
 func WithValue(parent Context, key interface{}, val interface{}) Context
 </code></pre>
-
 <p><code>WithCancel</code> 对应的是 <code>cancelCtx</code> ,其中，返回一个 <code>cancelCtx</code> ，同时返回一个 <code>CancelFunc</code>，<code>CancelFunc</code> 是 <code>context</code> 包中定义的一个函数类型：<code>type CancelFunc func()</code>。调用这个 <code>CancelFunc</code> 时，关闭对应的c.done，也就是让他的后代<code>goroutine</code>退出。</p>
-
 <p><code>WithDeadline</code> 和 <code>WithTimeout</code> 对应的是 <code>timerCtx</code> ，<code>WithDeadline</code> 和 <code>WithTimeout</code> 是相似的，<code>WithDeadline</code> 是设置具体的 <code>deadline</code> 时间，到达 <code>deadline</code> 的时候，后代 <code>goroutine</code> 退出，而 WithTimeout 简单粗暴，直接 <code>return WithDeadline(parent, time.Now().Add(timeout))</code>。</p>
-
 <p><code>WithValue</code> 对应 <code>valueCtx</code> ，<code>WithValue</code> 是在 <code>Context</code> 中设置一个 map，拿到这个 <code>Context</code> 以及它的后代的 <code>goroutine</code> 都可以拿到 map 里的值。</p>
-
 <blockquote>
 <p>详细 context 包源码解读: <a href="http://studygolang.com/articles/5131">go源码解读</a></p>
 </blockquote>
-
-<h4>使用原则</h4>
-
+<h4 id="heading-4">使用原则</h4>
 <ul>
 <li>使用 <code>Context</code> 的程序包需要遵循如下的原则来满足接口的一致性以及便于静态分析</li>
 <li>不要把 <code>Context</code> 存在一个结构体当中，显式地传入函数。<code>Context</code> 变量需要作为第一个参数使用，一般命名为<code>ctx</code></li>
@@ -227,11 +205,8 @@ func WithValue(parent Context, key interface{}, val interface{}) Context
 <li>使用 <code>context</code> 的 <code>Value</code> 相关方法只应该用于在程序和接口中传递的和请求相关的元数据，不要用它来传递一些可选的参数</li>
 <li>同样的 <code>Context</code> 可以用来传递到不同的 <code>goroutine</code> 中，<code>Context</code> 在多个<code>goroutine</code> 中是安全的</li>
 </ul>
-
-<h4>使用示例</h4>
-
+<h4 id="heading-5">使用示例</h4>
 <p>例子copy自: <a href="https://github.com/eleme/sre/blob/master/context.md">关于 Golang 中的 context 包的介绍</a></p>
-
 <pre><code>package main
 
 import (
@@ -297,17 +272,15 @@ func main() {
 }
 
 </code></pre>
-
-<p>官方完整示例:
-<a href="https://blog.golang.org/context/server/server.go">server</a>
-<a href="https://blog.golang.org/context/userip/userip.go">userip</a>
+<p>官方完整示例:<br>
+<a href="https://blog.golang.org/context/server/server.go">server</a><br>
+<a href="https://blog.golang.org/context/userip/userip.go">userip</a><br>
 <a href="https://blog.golang.org/context/google/google.go">google</a></p>
-
 <blockquote>
-<p>部分参考：
-<a href="http://studygolang.com/articles/5131">go源码解读</a>
-<a href="https://github.com/eleme/sre/blob/master/context.md">关于 Golang 中的 context 包的介绍</a>
-<a href="http://blog.golang.org/context">官方博客</a>
+<p>部分参考：<br>
+<a href="http://studygolang.com/articles/5131">go源码解读</a><br>
+<a href="https://github.com/eleme/sre/blob/master/context.md">关于 Golang 中的 context 包的介绍</a><br>
+<a href="http://blog.golang.org/context">官方博客</a><br>
 Thanks</p>
 </blockquote>
 

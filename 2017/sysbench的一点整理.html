@@ -91,10 +91,8 @@
             </div>
             <div class="row">
                 <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-                    <p>还记得刚到公司的第一个任务就是搞性能测试，断断续续也是搞了很久，sysbench这个工具也是用了有一段时间了，不敢说熟练，但是也是踩了一些坑，在此做些整理，欢迎诸位指正补充&hellip;</p>
-
+                    <p>还记得刚到公司的第一个任务就是搞性能测试，断断续续也是搞了很久，sysbench这个工具也是用了有一段时间了，不敢说熟练，但是也是踩了一些坑，在此做些整理，欢迎诸位指正补充...</p>
 <p>sysbench主要包括一下几种方式的测试：</p>
-
 <ol>
 <li>cpu性能</li>
 <li>磁盘io性能</li>
@@ -103,11 +101,8 @@
 <li>POSIX线程性能</li>
 <li>数据库性能(OLTP基准测试)</li>
 </ol>
-
-<h2>先说安装</h2>
-
+<h2 id="heading">先说安装</h2>
 <p>一般我是直接从github上copy下来，自己编译</p>
-
 <pre><code>git clone https://github.com/akopytov/sysbench.git
 // 如果使用0.5 版本: git branch 0.5
 ./autogen.sh
@@ -115,23 +110,15 @@
 make
 make install
 </code></pre>
-
 <p>详细安装说明参考 <a href="https://github.com/akopytov/sysbench">readme</a></p>
-
-<h2>只说 oltp</h2>
-
+<h2 id="-oltp">只说 oltp</h2>
 <p>sysbench 的 oltp 主要用于评估测试各种不同系统参数下的数据库负载情况。目前sysbench的数据库测试支持 Mysql、PostgreSQL、Oracle (我的任务主要是做 mysql &amp; tidb 的对比测试), 相比 0.4 版本，后续的版本 oltp 测试主要结合了 lua 脚本，不需要修改源码，通过自定义lua脚本就可以实现不同业务类型的测试。</p>
-
-<h3>参数</h3>
-
+<h3 id="heading-1">参数</h3>
 <p>sysbench 版本</p>
-
 <pre><code>sysbench --version
 sysbench 1.0.1-7fe53e4　       　
 </code></pre>
-
 <p>具体参数</p>
-
 <pre><code>sysbench --help
 Usage:
   sysbench [options]... [testname] [command]
@@ -232,18 +219,13 @@ oltp_read_write.lua options:
   --point_selects=N             Number of point SELECT queries per transaction [10]
 
 </code></pre>
-
 <blockquote>
-<p>参数太多实在不想一句句翻译了&hellip;</p>
+<p>参数太多实在不想一句句翻译了...</p>
 </blockquote>
-
-<h3>开测</h3>
-
+<h3 id="heading-2">开测</h3>
 <p>sysbench的测试流程</p>
-
-<p>prepare(准备数据) -&gt; run(运行测试) -&gt; cleanup(清理数据)
+<p>prepare(准备数据) -&gt; run(运行测试) -&gt; cleanup(清理数据)<br>
 目前社区提供的lua脚步</p>
-
 <pre><code>bulk_insert.lua
 oltp_common.lua
 oltp_delete.lua
@@ -257,9 +239,7 @@ oltp_write_only.lua
 select_random_points.lua
 select_random_ranges.lua
 </code></pre>
-
 <p>以 <code>oltp_read_only.lua</code> 为例</p>
-
 <pre><code>./sysbench ./lua/oltp_read_only.lua \
     --mysql-host=127.0.0.1 --mysql-port=3306 --mysql-user=root --mysql-password=000000 \
     --mysql-db=test --tables=10 --table-size=10000 \
@@ -268,9 +248,7 @@ select_random_ranges.lua
     prepare/run/cleanup
 
 </code></pre>
-
 <p>结果解读</p>
-
 <pre><code>sysbench 1.0.1-7fe53e4 (using bundled LuaJIT 2.1.0-beta2)
 
 Running the test with following options:
@@ -321,27 +299,22 @@ Threads fairness:
     events (avg/stddev):           1113.2031/14.76
     execution time (avg/stddev):   120.0457/0.04
 </code></pre>
-
 <p>我们一般关注的指标主要有:</p>
-
 <ul>
-<li>response time avg: 平均响应时间。（后面的95%的大小可以通过&ndash;percentile=98的方式去更改）</li>
+<li>response time avg: 平均响应时间。（后面的95%的大小可以通过--percentile=98的方式去更改）</li>
 <li>transactions: 精确的说是这一项后面的TPS 。但如果使用了-skip-trx=on，这项事务数恒为0，需要用total number of events 去除以总时间，得到tps（其实还可以分为读tps和写tps）</li>
 <li>queries: 用它除以总时间，得到吞吐量QPS</li>
 <li>当然还有一些系统层面的cpu,io,mem相关指标</li>
 </ul>
-
-<h3>建议</h3>
-
+<h3 id="heading-3">建议</h3>
 <blockquote>
 <p>sysbench 在最近刚升级了最新版(以上使用的就是最新版),有很多改进之处,让我最惊喜的是prepare数据相比之前变为多线程,准备数据更快, 降低了在prepare数据上耗费的时间(虽然之前自己用别的办法加速prepare数据,但是方法比较挫,这里就不做介绍了)</p>
-
-<p>注意新版本相比 1.0 和 0.5 有许多参数的改变
+</blockquote>
+<blockquote>
+<p>注意新版本相比 1.0 和 0.5 有许多参数的改变<br>
 当然你也可以指定自己定义的lua脚步,实现不同业务类型的测试</p>
 </blockquote>
-
-<h2>参考</h2>
-
+<h2 id="heading-4">参考</h2>
 <ol>
 <li><a href="https://github.com/akopytov/sysbench">github doc</a></li>
 <li><a href="http://mingxinglai.com/cn/2013/07/sysbench/">sysbench 0.5使用手册</a></li>
